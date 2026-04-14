@@ -72,10 +72,32 @@
           {
             "group": "Master Data API",
             "pages": [
-              "master-data/overview",
+              "master-data/overview"
+            ]
+          },
+          {
+            "group": "Products",
+            "pages": [
               "master-data/products",
+              "master-data/products-get-one",
+              "master-data/products-patch"
+            ]
+          },
+          {
+            "group": "Product Values",
+            "pages": [
               "master-data/product-values",
-              "master-data/customers"
+              "master-data/product-values-post"
+            ]
+          },
+          {
+            "group": "Customers & Facilities",
+            "pages": [
+              "master-data/customers",
+              "master-data/customers-get-one",
+              "master-data/facilities-list",
+              "master-data/facilities-get-one",
+              "master-data/facilities-patch"
             ]
           }
         ]
