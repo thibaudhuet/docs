@@ -81,12 +81,6 @@
               "guides/mcp-integration",
               "guides/scenario-comparison"
             ]
-          },
-          {
-            "group": "SDKs",
-            "pages": [
-              "guides/python-sdk-quickstart"
-            ]
           }
         ]
       }
