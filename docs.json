@@ -21,7 +21,7 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
+      "label": "Access SIMCEL App",
       "href": "https://app.simcel.io"
     }
   },
