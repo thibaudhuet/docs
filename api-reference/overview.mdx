@@ -12,17 +12,17 @@ https://api.simcel.io/insights/v1
 ## Available endpoints
 
 <CardGroup cols={2}>
-  <Card title="Demand Forecast" icon="chart-line" href="/api-reference/demand-forecast">
+  <Card title="Demand" icon="chart-line" href="/api-reference/demand-forecast">
     Demand volume, value, fill rate, and forecast accuracy over time
   </Card>
-  <Card title="P&L Summary" icon="dollar-sign" href="/api-reference/pnl-summary">
+  <Card title="P&L" icon="dollar-sign" href="/api-reference/pnl-summary">
     Full Profit & Loss stack from Gross Sales down to EBIT and DPM
   </Card>
-  <Card title="Supply Performance" icon="warehouse" href="/api-reference/supply-performance">
-    Closing stock, service levels, dispatch volumes by DC or SKU
+  <Card title="Supply" icon="warehouse" href="/api-reference/supply-performance">
+    Closing stock, service levels, dispatch volumes by DC or SKU — **Coming Soon**
   </Card>
   <Card title="Sustainability" icon="leaf" href="/api-reference/sustainability">
-    CO2 footprint broken down by inbound, storage, and outbound
+    CO2 footprint broken down by inbound, storage, and outbound — **Coming Soon**
   </Card>
 </CardGroup>
 
@@ -74,8 +74,8 @@ The `scenarios` array always preserves the order of `scenarioIds` you passed in.
 
 | Plan | Requests/minute | Requests/day |
 |---|---|---|
-| Starter | 60 | 10,000 |
-| Growth | 300 | 100,000 |
+| Starter | 10 | 100 |
+| Growth | 100 | 1,000 |
 | Enterprise | Custom | Custom |
 
 Rate limit headers are included on every response:

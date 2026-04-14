@@ -52,7 +52,7 @@
           },
           {
             "group": "Resources",
-            "pages": ["changelog", "rate-limits", "errors"]
+            "pages": ["pricing", "changelog", "rate-limits", "errors"]
           }
         ]
       },
@@ -75,10 +75,16 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Guides",
+            "group": "AI Agents",
             "pages": [
               "guides/first-ai-agent",
-              "guides/scenario-comparison",
+              "guides/mcp-integration",
+              "guides/scenario-comparison"
+            ]
+          },
+          {
+            "group": "SDKs",
+            "pages": [
               "guides/python-sdk-quickstart"
             ]
           }

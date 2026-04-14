@@ -1,0 +1,92 @@
+---
+title: Pricing
+description: SIMCEL Insights API plans and pricing
+---
+
+## API Plans
+
+All plans include access to the SIMCEL Insights API. Choose the plan that fits your usage and team size.
+
+<CardGroup cols={3}>
+  <Card title="Starter" icon="seedling">
+    **Free**
+
+    For individuals and early-stage projects exploring SIMCEL data.
+  </Card>
+  <Card title="Growth" icon="chart-line">
+    **$199 / month**
+
+    *or $1,990 / year (save 17%)*
+
+    For teams building production AI agents and dashboards.
+  </Card>
+  <Card title="Enterprise" icon="building">
+    **Custom pricing**
+
+    For organizations requiring high volume, SLAs, and dedicated support.
+  </Card>
+</CardGroup>
+
+---
+
+## Plan comparison
+
+| Feature | Starter | Growth | Enterprise |
+|---|---|---|---|
+| **Monthly price** | Free | $199 / mo | Custom |
+| **Annual price** | Free | $1,990 / yr | Custom |
+| **Requests / minute** | 10 | 100 | Custom |
+| **Requests / day** | 100 | 1,000 | Custom |
+| **Max scenarios per request** | 3 | 3 | 3 |
+| **Endpoints available** | Demand, P&L | All available | All (incl. early access) |
+| **API key seats** | 1 | 5 | Unlimited |
+| **Data freshness** | Real-time | Real-time | Real-time |
+| **MCP server access** | ✅ | ✅ | ✅ |
+| **Email support** | — | ✅ | ✅ |
+| **Dedicated SLA** | — | — | ✅ |
+| **Custom rate limits** | — | — | ✅ |
+| **On-premise / private cloud** | — | — | ✅ |
+| **Early access to new endpoints** | — | — | ✅ |
+
+---
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Can I upgrade or downgrade at any time?">
+    Yes. You can upgrade immediately and the new limits apply instantly. Downgrades take effect at the end of your current billing period.
+  </Accordion>
+
+  <Accordion title="What happens if I exceed my daily limit?">
+    Requests beyond your daily limit return a `429 Too Many Requests` error. Your quota resets at midnight UTC. You can upgrade your plan at any time to increase your limits — see [Rate Limits](/rate-limits) for retry guidance.
+  </Accordion>
+
+  <Accordion title="Is there a free trial for the Growth plan?">
+    Yes — all new accounts start with a **14-day free trial** of the Growth plan, no credit card required. After the trial, you'll automatically drop to the Starter (Free) plan unless you upgrade.
+  </Accordion>
+
+  <Accordion title="What counts as a 'request'?">
+    Each HTTP call to an Insights API endpoint counts as one request, regardless of how many scenarios you pass or how large the response is.
+  </Accordion>
+
+  <Accordion title="Do you offer academic or startup discounts?">
+    Yes. [Contact us](mailto:sales@simcel.io) with proof of eligibility and we'll apply a discount to the Growth plan.
+  </Accordion>
+
+  <Accordion title="What payment methods do you accept?">
+    We accept all major credit cards (Visa, Mastercard, Amex) and bank transfer for annual Enterprise contracts.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card title="Start for free" icon="bolt" href="/quickstart">
+    Create an account and make your first API call in minutes — no credit card required
+  </Card>
+  <Card title="Contact Sales" icon="envelope" href="mailto:sales@simcel.io">
+    Talk to our team about Growth or Enterprise pricing
+  </Card>
+</CardGroup>
