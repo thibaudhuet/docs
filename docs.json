@@ -32,7 +32,7 @@
     }
   },
   "css": "/custom.css",
-  "openapi": "/openapi.yaml",
+  "openapi": ["/openapi.yaml", "/openapi-master.yaml"],
   "navigation": {
     "tabs": [
       {
@@ -67,6 +67,15 @@
               "api-reference/pnl-summary",
               "api-reference/supply-performance",
               "api-reference/sustainability"
+            ]
+          },
+          {
+            "group": "Master Data API",
+            "pages": [
+              "master-data/overview",
+              "master-data/products",
+              "master-data/product-values",
+              "master-data/customers"
             ]
           }
         ]

@@ -1,0 +1,118 @@
+---
+title: Products
+description: Read and override your product catalog — packaging, logistics, and classification attributes
+openapi: GET /products
+---
+
+## What's in a product record?
+
+Each product in SIMCEL carries three types of attributes:
+
+**Classification** — how the product is segmented and reported:
+`category`, `subCategory`, `brands`, `productRange`, `strategicSegment`, `productType`
+
+**Logistics** — how the product is physically handled:
+`kgPerCarton`, `grossKgPerCarton`, `cartonsPerPallet`, `m3PerCarton`
+
+**Planning rules** — constraints used by the simulation engine:
+`shelfLifeInDays`, `incubationInDays`, `moq`, `status`
+
+---
+
+## Filtering and pagination
+
+```python
+import requests
+
+def list_products(token: str, workspace_id: str, **filters):
+    resp = requests.get(
+        "https://api.simcel.io/master/v1/products",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"workspaceId": workspace_id, **filters}
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+# All active products in the Nutrition category
+products = list_products(
+    token,
+    workspace_id="ws_abc123",
+    status="Active",
+    category="Nutrition",
+    limit=100,
+)
+
+print(f"{products['total']} products found")
+for p in products["data"]:
+    print(f"  {p['productId']} — {p['productName']} ({p['brands']})")
+```
+
+---
+
+## Get a single product
+
+```python
+resp = requests.get(
+    "https://api.simcel.io/master/v1/products/SKU-001",
+    headers={"Authorization": f"Bearer {token}"},
+    params={"workspaceId": "ws_abc123"}
+)
+product = resp.json()
+print(f"MOQ: {product['moq']} | Shelf life: {product['shelfLifeInDays']} days")
+```
+
+---
+
+## Override product attributes
+
+Use `PATCH` to apply a local override. This is useful for:
+- Updating MOQ without touching source data
+- Marking a product as Discontinued for a specific planning cycle
+- Correcting packaging specs (kg, CBM) that haven't been updated in the source
+
+```python
+resp = requests.patch(
+    "https://api.simcel.io/master/v1/products/SKU-001",
+    headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    },
+    params={"workspaceId": "ws_abc123"},
+    json={
+        "status": "Discontinued",
+        "moq": 0,
+    }
+)
+print(resp.json())
+# { "success": true, "overrideId": "ovr_xyz", "appliedAt": "2025-04-14T..." }
+```
+
+<Warning>
+  Overrides affect simulations run **after** the override is applied. Re-running a scenario after applying an override will use the new values.
+</Warning>
+
+---
+
+## Common use cases for AI agents
+
+```python
+# Find all products nearing end of life (status = Discontinued)
+discontinued = list_products(token, "ws_abc123", status="Discontinued")
+
+# Build a product lookup map for enriching KPI data
+all_products = []
+skip = 0
+while True:
+    batch = list_products(token, "ws_abc123", limit=500, skip=skip)
+    all_products.extend(batch["data"])
+    skip += 500
+    if skip >= batch["total"]:
+        break
+
+product_map = {p["productId"]: p for p in all_products}
+
+# Now enrich a demand response with product metadata
+for row in demand_data["scenarios"][0]["series"]:
+    product = product_map.get(row.get("groupKey"), {})
+    print(f"{row['period']} | {product.get('productName', '?')} | {row['demandVolume']:,} units")
+```

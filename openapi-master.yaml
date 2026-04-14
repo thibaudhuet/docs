@@ -1,0 +1,782 @@
+openapi: 3.1.0
+info:
+  title: SIMCEL Master Data API
+  version: 1.0.0
+  description: |
+    The SIMCEL Master Data API gives you read and write access to the reference data
+    that drives your supply chain simulations — products, pricing, customers, and facilities.
+
+    Use this API to:
+    - Retrieve the full product catalog with packaging and logistics attributes
+    - Read and override product pricing (GSV, listed price) per customer
+    - Access your customer and facility network (DCs, distributors, customers)
+  contact:
+    name: SIMCEL Support
+    email: support@simcel.io
+
+servers:
+  - url: https://api.simcel.io/master/v1
+    description: Production
+  - url: https://api-staging.simcel.io/master/v1
+    description: Staging
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Products
+    description: Product catalog and packaging attributes
+  - name: Product Values
+    description: Product pricing per customer (GSV, listed price)
+  - name: Customers & Facilities
+    description: Customers, distributors, and distribution centers
+
+paths:
+
+  # ─────────────────────────────────────────────
+  # PRODUCTS
+  # ─────────────────────────────────────────────
+
+  /products:
+    get:
+      operationId: listProducts
+      summary: List products
+      description: |
+        Returns the full product catalog for a workspace.
+        Supports filtering by category, brand, status, and product type.
+        Results are paginated — use `limit` and `skip` for large catalogs.
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: status
+          in: query
+          description: Filter by product status
+          schema:
+            type: string
+            enum: [Active, Discontinued, New]
+        - name: category
+          in: query
+          description: Filter by product category
+          schema:
+            type: string
+        - name: productType
+          in: query
+          description: Filter by product type
+          schema:
+            type: string
+        - name: brand
+          in: query
+          description: Filter by brand
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Search by product name or ID (partial match)
+          schema:
+            type: string
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/skip'
+      responses:
+        '200':
+          description: Paginated list of products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+              example:
+                total: 248
+                limit: 50
+                skip: 0
+                data:
+                  - productId: "SKU-001"
+                    productName: "Whey Protein Vanilla 1kg"
+                    productType: "Finished Good"
+                    category: "Nutrition"
+                    subCategory: "Protein"
+                    brands: "NutriCore"
+                    productRange: "Premium"
+                    strategicSegment: "Core"
+                    status: "Active"
+                    kgPerCarton: 12
+                    cartonsPerPallet: 48
+                    m3PerCarton: 0.024
+                    shelfLifeInDays: 730
+                    moq: 100
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /products/{productId}:
+    get:
+      operationId: getProduct
+      summary: Get a single product
+      description: Returns full details for one product by its ID.
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: SKU-001
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: overrideProduct
+      summary: Override product attributes
+      description: |
+        Creates or updates a **local override** for specific product fields.
+        This does not modify the source master data — it writes to SIMCEL's
+        override layer, which takes precedence in simulations that use this workspace.
+
+        Only the fields you include in the request body will be overridden.
+        To remove an override, set the field to `null`.
+      tags:
+        - Products
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductOverrideRequest'
+            example:
+              status: "Discontinued"
+              moq: 200
+              shelfLifeInDays: 365
+      responses:
+        '200':
+          description: Override applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverrideResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─────────────────────────────────────────────
+  # PRODUCT VALUES
+  # ─────────────────────────────────────────────
+
+  /product-values:
+    get:
+      operationId: listProductValues
+      summary: List product values (pricing)
+      description: |
+        Returns pricing data for products per customer.
+        Each record represents one pricing type (e.g. `GrossSalesValue`, `ListedPrice`)
+        for a specific product–customer combination, with an effective date range.
+
+        Use `name` to filter by pricing type and `productId` / `customerRef` to scope results.
+      tags:
+        - Product Values
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: productId
+          in: query
+          description: Filter by product ID
+          schema:
+            type: string
+        - name: customerRef
+          in: query
+          description: Filter by customer reference
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: Filter by pricing type
+          schema:
+            type: string
+            enum: [GrossSalesValue, ListedPrice, GrossSalesValuePerKg, ListedPricePerKg]
+        - name: asOf
+          in: query
+          description: Filter to prices valid on a specific date (ISO 8601). Returns records where startDate ≤ asOf ≤ endDate.
+          schema:
+            type: string
+            format: date
+          example: "2025-06-01"
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/skip'
+      responses:
+        '200':
+          description: Paginated list of product pricing records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductValueListResponse'
+              example:
+                total: 1240
+                limit: 50
+                skip: 0
+                data:
+                  - productId: "SKU-001"
+                    customerRef: "CUST-FR-001"
+                    name: "GrossSalesValue"
+                    value: 24.50
+                    startDate: "2025-01-01"
+                    endDate: "2025-12-31"
+                  - productId: "SKU-001"
+                    customerRef: "CUST-FR-001"
+                    name: "ListedPrice"
+                    value: 21.00
+                    startDate: "2025-01-01"
+                    endDate: "2025-12-31"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      operationId: upsertProductValue
+      summary: Upsert a product value override
+      description: |
+        Creates or updates a pricing override for a product–customer–type combination.
+
+        Like product attribute overrides, this writes to SIMCEL's override layer
+        and takes effect in simulations using this workspace and plan.
+
+        The combination of `productId + customerRef + name + startDate` acts as the unique key.
+        Submitting the same key again will update the existing record.
+      tags:
+        - Product Values
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductValueUpsertRequest'
+            example:
+              workspaceId: "ws_abc123"
+              planId: "plan_9xKz2"
+              productId: "SKU-001"
+              customerRef: "CUST-FR-001"
+              name: "GrossSalesValue"
+              value: 26.00
+              startDate: "2025-07-01"
+              endDate: "2025-12-31"
+      responses:
+        '200':
+          description: Product value upserted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverrideResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─────────────────────────────────────────────
+  # CUSTOMERS & FACILITIES
+  # ─────────────────────────────────────────────
+
+  /customers:
+    get:
+      operationId: listCustomers
+      summary: List customers
+      description: |
+        Returns all customer records for a workspace.
+        Customers are a subset of the facility master — records with `type` = `Customer` or `SecondaryCustomer`.
+
+        Use `channel`, `region`, or `country` to filter by geography or trade channel.
+      tags:
+        - Customers & Facilities
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: channel
+          in: query
+          description: Filter by sales channel
+          schema:
+            type: string
+        - name: region
+          in: query
+          description: Filter by region
+          schema:
+            type: string
+        - name: country
+          in: query
+          description: Filter by country code (ISO 3166-1 alpha-2)
+          schema:
+            type: string
+          example: FR
+        - name: keyAccount
+          in: query
+          description: Filter by key account flag
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search by customer name or ref (partial match)
+          schema:
+            type: string
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/skip'
+      responses:
+        '200':
+          description: Paginated list of customers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityListResponse'
+              example:
+                total: 312
+                limit: 50
+                skip: 0
+                data:
+                  - ref: "CUST-FR-001"
+                    name: "Carrefour France"
+                    type: "Customer"
+                    channel: "Modern Trade"
+                    subChannel: "Hypermarket"
+                    region: "Western Europe"
+                    country: "FR"
+                    city: "Paris"
+                    keyAccount: true
+                    status: "Active"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /customers/{ref}:
+    get:
+      operationId: getCustomer
+      summary: Get a single customer
+      description: Returns full details for one customer by their facility reference.
+      tags:
+        - Customers & Facilities
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: ref
+          in: path
+          required: true
+          schema:
+            type: string
+          example: CUST-FR-001
+      responses:
+        '200':
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /facilities:
+    get:
+      operationId: listFacilities
+      summary: List all facilities
+      description: |
+        Returns all facilities in the network — customers, secondary customers,
+        distributors, and distribution centers (DCs).
+
+        Use `type` to filter by facility type.
+      tags:
+        - Customers & Facilities
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: type
+          in: query
+          description: Filter by facility type
+          schema:
+            type: string
+            enum: [Customer, SecondaryCustomer, Distributor, DC]
+        - name: region
+          in: query
+          schema:
+            type: string
+        - name: country
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/skip'
+      responses:
+        '200':
+          description: Paginated list of facilities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /facilities/{ref}:
+    get:
+      operationId: getFacility
+      summary: Get a single facility
+      tags:
+        - Customers & Facilities
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: ref
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Facility details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: overrideFacility
+      summary: Override facility attributes
+      description: |
+        Creates or updates a local override for specific facility fields.
+        Only the fields you include will be overridden.
+      tags:
+        - Customers & Facilities
+      parameters:
+        - $ref: '#/components/parameters/workspaceId'
+        - name: ref
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityOverrideRequest'
+            example:
+              status: "Inactive"
+              region: "Southern Europe"
+      responses:
+        '200':
+          description: Override applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverrideResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    workspaceId:
+      name: workspaceId
+      in: query
+      required: true
+      description: The workspace ID to query master data from
+      schema:
+        type: string
+      example: ws_abc123
+
+    limit:
+      name: limit
+      in: query
+      description: Maximum number of records to return (max 500)
+      schema:
+        type: integer
+        default: 50
+        maximum: 500
+
+    skip:
+      name: skip
+      in: query
+      description: Number of records to skip (for pagination)
+      schema:
+        type: integer
+        default: 0
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        productId:
+          type: string
+          description: Unique product identifier
+        productName:
+          type: string
+        productType:
+          type: string
+          description: e.g. Finished Good, Raw Material, Semi-Finished
+        category:
+          type: string
+        subCategory:
+          type: string
+        brands:
+          type: string
+        productRange:
+          type: string
+        strategicSegment:
+          type: string
+        status:
+          type: string
+          enum: [Active, Discontinued, New]
+        kgPerCarton:
+          type: number
+          description: Gross weight per carton in kg
+        grossKgPerCarton:
+          type: number
+        cartonsPerPallet:
+          type: number
+        m3PerCarton:
+          type: number
+          description: Volume per carton in cubic metres
+        shelfLifeInDays:
+          type: integer
+        incubationInDays:
+          type: integer
+        moq:
+          type: number
+          description: Minimum order quantity
+        productGroups:
+          type: array
+          items:
+            type: string
+        lmid:
+          type: string
+        prevGmid:
+          type: string
+
+    ProductListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        skip:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+
+    ProductOverrideRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [Active, Discontinued, New]
+          nullable: true
+        moq:
+          type: number
+          nullable: true
+        shelfLifeInDays:
+          type: integer
+          nullable: true
+        cartonsPerPallet:
+          type: number
+          nullable: true
+        m3PerCarton:
+          type: number
+          nullable: true
+        kgPerCarton:
+          type: number
+          nullable: true
+        strategicSegment:
+          type: string
+          nullable: true
+
+    ProductValue:
+      type: object
+      properties:
+        productId:
+          type: string
+        customerRef:
+          type: string
+        name:
+          type: string
+          enum: [GrossSalesValue, ListedPrice, GrossSalesValuePerKg, ListedPricePerKg]
+          description: The pricing type
+        value:
+          type: number
+          description: Price value in plan currency
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    ProductValueListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        skip:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductValue'
+
+    ProductValueUpsertRequest:
+      type: object
+      required: [workspaceId, planId, productId, customerRef, name, value, startDate, endDate]
+      properties:
+        workspaceId:
+          type: string
+        planId:
+          type: string
+          description: Plan ID — pricing overrides are scoped to a specific plan
+        productId:
+          type: string
+        customerRef:
+          type: string
+        name:
+          type: string
+          enum: [GrossSalesValue, ListedPrice, GrossSalesValuePerKg, ListedPricePerKg]
+        value:
+          type: number
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    Facility:
+      type: object
+      properties:
+        ref:
+          type: string
+          description: Unique facility reference key
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Customer, SecondaryCustomer, Distributor, DC]
+        channel:
+          type: string
+        subChannel:
+          type: string
+        region:
+          type: string
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code
+        city:
+          type: string
+        keyAccount:
+          type: boolean
+        status:
+          type: string
+          enum: [Active, Inactive]
+        shipTo:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    FacilityListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        skip:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Facility'
+
+    FacilityOverrideRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [Active, Inactive]
+          nullable: true
+        region:
+          type: string
+          nullable: true
+        channel:
+          type: string
+          nullable: true
+        keyAccount:
+          type: boolean
+          nullable: true
+
+    OverrideResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        overrideId:
+          type: string
+          description: Internal ID of the created/updated override record
+        appliedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 404
+            error: Not Found
+            message: "Product SKU-001 not found in workspace ws_abc123"

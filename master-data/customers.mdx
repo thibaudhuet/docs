@@ -1,0 +1,143 @@
+---
+title: Customers & Facilities
+description: Read and override customers, distributors, and distribution centers in your network
+openapi: GET /customers
+---
+
+## The facility network
+
+In SIMCEL, all physical nodes in your supply chain — customers, distributors, and distribution centers — are stored in a single **Facility Master**. The `type` field distinguishes them:
+
+| Type | Description |
+|---|---|
+| `Customer` | End customer (modern trade, e-commerce, traditional trade) |
+| `SecondaryCustomer` | Sub-customer or ship-to party downstream of a distributor |
+| `Distributor` | Third-party distributor in the network |
+| `DC` | Company-owned or 3PL distribution center |
+
+The `/customers` endpoint is a convenience shortcut that returns only `Customer` and `SecondaryCustomer` records. Use `/facilities` when you need the full network including DCs and distributors.
+
+---
+
+## List customers
+
+```python
+resp = requests.get(
+    "https://api.simcel.io/master/v1/customers",
+    headers={"Authorization": f"Bearer {token}"},
+    params={
+        "workspaceId": "ws_abc123",
+        "channel": "Modern Trade",
+        "country": "FR",
+        "limit": 100,
+    }
+)
+
+for customer in resp.json()["data"]:
+    ka = "⭐ Key Account" if customer.get("keyAccount") else ""
+    print(f"{customer['ref']} — {customer['name']} ({customer['city']}) {ka}")
+```
+
+---
+
+## Get full network (all facility types)
+
+```python
+# Get all DCs in the network
+resp = requests.get(
+    "https://api.simcel.io/master/v1/facilities",
+    headers={"Authorization": f"Bearer {token}"},
+    params={
+        "workspaceId": "ws_abc123",
+        "type": "DC",
+    }
+)
+
+dcs = resp.json()["data"]
+print(f"{len(dcs)} distribution centers found:")
+for dc in dcs:
+    print(f"  {dc['ref']} — {dc['name']} ({dc['country']})")
+```
+
+---
+
+## Override a facility
+
+Use `PATCH` to correct or update facility attributes. Common use cases:
+- Reassigning a customer to a new region
+- Deactivating a closed DC
+- Updating channel classification after a trade renegotiation
+
+```python
+resp = requests.patch(
+    "https://api.simcel.io/master/v1/facilities/DC-PARIS",
+    headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    },
+    params={"workspaceId": "ws_abc123"},
+    json={
+        "status": "Inactive",
+    }
+)
+print(resp.json())
+# { "success": true, "overrideId": "ovr_fac_abc", "appliedAt": "..." }
+```
+
+---
+
+## Common use cases for AI agents
+
+**Map customers to regions for geo analysis:**
+
+```python
+customers = []
+skip = 0
+while True:
+    batch = requests.get(
+        "https://api.simcel.io/master/v1/customers",
+        headers={"Authorization": f"Bearer {token}"},
+        params={"workspaceId": "ws_abc123", "limit": 500, "skip": skip}
+    ).json()
+    customers.extend(batch["data"])
+    skip += 500
+    if skip >= batch["total"]:
+        break
+
+# Group by region
+from collections import defaultdict
+by_region = defaultdict(list)
+for c in customers:
+    by_region[c.get("region", "Unknown")].append(c["ref"])
+
+for region, refs in sorted(by_region.items()):
+    print(f"{region}: {len(refs)} customers")
+```
+
+**Cross-reference supply performance with DC metadata:**
+
+```python
+supply = requests.get(
+    "https://api.simcel.io/insights/v1/supply-performance",
+    headers={"Authorization": f"Bearer {token}"},
+    params={
+        "planId": "plan_9xKz2",
+        "scenarioIds": "scen_committed",
+        "groupBy": "dc",
+        "interval": "M",
+    }
+).json()
+
+facilities = requests.get(
+    "https://api.simcel.io/master/v1/facilities",
+    headers={"Authorization": f"Bearer {token}"},
+    params={"workspaceId": "ws_abc123", "type": "DC"}
+).json()
+
+dc_map = {f["ref"]: f for f in facilities["data"]}
+
+for row in supply["scenarios"][0]["series"]:
+    dc = dc_map.get(row["groupKey"], {})
+    country = dc.get("country", "?")
+    print(f"{row['groupKey']} ({country}) | SL: {row['serviceLevel']:.1%} | Stock: {row['closingStock']:,}")
+```

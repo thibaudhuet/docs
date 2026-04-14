@@ -1,0 +1,81 @@
+---
+title: Master Data API
+description: Read and override your SIMCEL reference data — products, pricing, customers, and facilities
+---
+
+## What is the Master Data API?
+
+The **SIMCEL Master Data API** exposes the reference data that drives your supply chain simulations. This is the "static" layer — the catalog of products, the pricing table, the network of customers and distribution centers — that every scenario is built on top of.
+
+<CardGroup cols={3}>
+  <Card title="Products" icon="box" href="/master-data/products">
+    Product catalog with packaging, logistics, and classification attributes
+  </Card>
+  <Card title="Product Values" icon="tag" href="/master-data/product-values">
+    Product pricing per customer — GSV, listed price, with effective date ranges
+  </Card>
+  <Card title="Customers & Facilities" icon="building" href="/master-data/customers">
+    Customers, distributors, and distribution centers in your network
+  </Card>
+</CardGroup>
+
+---
+
+## Base URL
+
+```
+https://api.simcel.io/master/v1
+```
+
+---
+
+## Key concept: workspaceId
+
+Every Master Data API request requires a `workspaceId`. In SIMCEL, each workspace has its own isolated master data — your product catalog, pricing, and facility network are scoped to a workspace and don't bleed across clients or business units.
+
+```
+GET /products?workspaceId=ws_abc123
+```
+
+You can find your workspace IDs in the SIMCEL dashboard under **Settings → Workspaces**, or by calling:
+
+```http
+GET https://api.simcel.io/insights/v1/plans
+Authorization: Bearer YOUR_TOKEN
+```
+
+Each plan response includes the `workspaceId` of the workspace it belongs to.
+
+---
+
+## Read vs Override
+
+The Master Data API supports two types of writes:
+
+| Operation | What it does |
+|---|---|
+| `GET` | Reads the current master data (or override if one exists) |
+| `PATCH` / `POST` | Writes a **local override** — does not modify source data |
+
+**Overrides** are a SIMCEL concept: you can layer changes on top of the base master data without altering the source. Overrides are scoped to a workspace (and for pricing, to a plan). Simulations pick up overrides automatically.
+
+<Note>
+  The Master Data API does not replace ETL-based data loading. It is designed for targeted, programmatic overrides — e.g. updating a product's MOQ, correcting a customer's region, or adjusting a price for a specific planning cycle.
+</Note>
+
+---
+
+## Available endpoints
+
+| Method | Endpoint | Description | Status |
+|---|---|---|---|
+| `GET` | `/products` | List all products | ✅ Available |
+| `GET` | `/products/{productId}` | Get one product | ✅ Available |
+| `PATCH` | `/products/{productId}` | Override product attributes | ✅ Available |
+| `GET` | `/product-values` | List product pricing | ✅ Available |
+| `POST` | `/product-values` | Upsert pricing override | ✅ Available |
+| `GET` | `/customers` | List customers | ✅ Available |
+| `GET` | `/customers/{ref}` | Get one customer | ✅ Available |
+| `GET` | `/facilities` | List all facilities (all types) | ✅ Available |
+| `GET` | `/facilities/{ref}` | Get one facility | ✅ Available |
+| `PATCH` | `/facilities/{ref}` | Override facility attributes | ✅ Available |

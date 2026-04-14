@@ -1,0 +1,120 @@
+---
+title: Product Values
+description: Read and override product pricing per customer — GSV, listed price, with effective date ranges
+openapi: GET /product-values
+---
+
+## What is a Product Value?
+
+A **Product Value** is a pricing record that defines what a product is worth for a specific customer, over a specific date range. SIMCEL uses product values to compute revenue KPIs like **Gross FIE Sales** and **Net FIE Sales** in simulations.
+
+Each record has five key fields:
+
+| Field | Description |
+|---|---|
+| `productId` | The product this price applies to |
+| `customerRef` | The customer this price is for |
+| `name` | The pricing type (see below) |
+| `value` | The price amount in plan currency |
+| `startDate` / `endDate` | Effective date range |
+
+---
+
+## Pricing types (`name`)
+
+| Value | Description |
+|---|---|
+| `GrossSalesValue` | Gross selling price per unit (carton) to the customer |
+| `GrossSalesValuePerKg` | GSV expressed per kilogram |
+| `ListedPrice` | The official listed/catalogue price before trade deductions |
+| `ListedPricePerKg` | Listed price per kilogram |
+
+The simulation engine uses `GrossSalesValue` as the primary revenue driver.
+`ListedPrice` is used to compute trade expense deductions.
+
+---
+
+## Query pricing for a product
+
+```python
+resp = requests.get(
+    "https://api.simcel.io/master/v1/product-values",
+    headers={"Authorization": f"Bearer {token}"},
+    params={
+        "workspaceId": "ws_abc123",
+        "productId": "SKU-001",
+        "name": "GrossSalesValue",
+        "asOf": "2025-06-01",   # only prices valid on this date
+    }
+)
+
+for record in resp.json()["data"]:
+    print(f"{record['customerRef']}: €{record['value']:.2f} "
+          f"({record['startDate']} → {record['endDate']})")
+```
+
+---
+
+## Override pricing for a planning cycle
+
+Use `POST /product-values` to inject a price override for a specific plan. This is the programmatic equivalent of a price event in SIMCEL — useful for automating annual price list updates or testing pricing scenarios.
+
+```python
+# Apply a 5% price increase for a customer from July 2025
+current_price = 24.50
+
+resp = requests.post(
+    "https://api.simcel.io/master/v1/product-values",
+    headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    },
+    json={
+        "workspaceId": "ws_abc123",
+        "planId": "plan_9xKz2",
+        "productId": "SKU-001",
+        "customerRef": "CUST-FR-001",
+        "name": "GrossSalesValue",
+        "value": round(current_price * 1.05, 2),
+        "startDate": "2025-07-01",
+        "endDate": "2025-12-31",
+    }
+)
+print(resp.json())
+# { "success": true, "overrideId": "ovr_pv_abc", "appliedAt": "..." }
+```
+
+---
+
+## Bulk pricing update pattern
+
+```python
+price_updates = [
+    {"customerRef": "CUST-FR-001", "productId": "SKU-001", "value": 25.70},
+    {"customerRef": "CUST-FR-001", "productId": "SKU-002", "value": 18.40},
+    {"customerRef": "CUST-UK-005", "productId": "SKU-001", "value": 22.00},
+]
+
+results = []
+for update in price_updates:
+    resp = requests.post(
+        "https://api.simcel.io/master/v1/product-values",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        json={
+            "workspaceId": "ws_abc123",
+            "planId": "plan_9xKz2",
+            "name": "GrossSalesValue",
+            "startDate": "2025-07-01",
+            "endDate": "2025-12-31",
+            **update,
+        }
+    )
+    results.append({"input": update, "result": resp.json()})
+
+success = sum(1 for r in results if r["result"]["success"])
+print(f"Updated {success}/{len(results)} prices successfully")
+```
+
+<Note>
+  Pricing overrides are scoped to a **plan** via `planId`. The same product–customer pair can have different prices across plans, allowing you to test the financial impact of price changes scenario-by-scenario.
+</Note>
