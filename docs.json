@@ -75,6 +75,12 @@
         "tab": "Guides",
         "groups": [
           {
+            "group": "Integration Patterns",
+            "pages": [
+              "guides/architecture-examples"
+            ]
+          },
+          {
             "group": "AI Agents",
             "pages": [
               "guides/first-ai-agent",
