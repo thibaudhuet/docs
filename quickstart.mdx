@@ -1,80 +1,182 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Make your first SIMCEL API call in under 5 minutes
 ---
 
-## Get started in three steps
+## Prerequisites
 
-Get your documentation site running locally and make your first customization.
+- A SIMCEL account with at least one active Plan
+- An API key (generate one in **Settings → API Keys** inside the SIMCEL app)
 
-### Step 1: Set up your local environment
+---
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+## Step 1: Get a token
 
-### Step 2: Deploy your changes
+Exchange your API key for a short-lived bearer token.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.simcel.io/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "apiKey": "sk_live_your_api_key_here"
+  }'
+```
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+```python Python
+import requests
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+resp = requests.post("https://api.simcel.io/auth/token", json={
+    "apiKey": "sk_live_your_api_key_here"
+})
 
-### Step 3: Go live
+token = resp.json()["accessToken"]
+print(token)
+```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+```javascript Node.js
+const resp = await fetch("https://api.simcel.io/auth/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ apiKey: "sk_live_your_api_key_here" }),
+});
 
-## Next steps
+const { accessToken } = await resp.json();
+```
+</CodeGroup>
 
-Now that you have your docs running, explore these key features:
+**Response:**
 
-<CardGroup cols={2}>
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 3600
+}
+```
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+<Tip>
+  Tokens expire after **1 hour**. Cache the token and refresh it before expiry. Avoid calling `/auth/token` on every request.
+</Tip>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+---
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+## Step 2: Find your Plan ID and Scenario IDs
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+You need a `planId` and at least one `scenarioId` for every Insights API call.
 
-</CardGroup>
+```bash
+curl https://api.simcel.io/insights/v1/plans \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+```json
+{
+  "plans": [
+    {
+      "id": "plan_9xKz2",
+      "name": "FY2025 Annual Plan",
+      "currency": "USD",
+      "scenarios": [
+        { "id": "scen_abc", "name": "Committed", "flags": ["committed"] },
+        { "id": "scen_def", "name": "Optimistic", "flags": [] },
+        { "id": "scen_ghi", "name": "Actual", "flags": ["actual"] }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Step 3: Call your first Insights endpoint
+
+Let's fetch the P&L summary comparing two scenarios:
+
+<CodeGroup>
+```bash cURL
+curl "https://api.simcel.io/insights/v1/pnl-summary?planId=plan_9xKz2&scenarioIds=scen_abc,scen_def&interval=FY&currency=USD" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+```python Python
+import requests
+
+headers = {"Authorization": f"Bearer {token}"}
+
+resp = requests.get(
+    "https://api.simcel.io/insights/v1/pnl-summary",
+    headers=headers,
+    params={
+        "planId": "plan_9xKz2",
+        "scenarioIds": "scen_abc,scen_def",
+        "interval": "FY",
+        "currency": "USD",
+    }
+)
+
+data = resp.json()
+for scenario in data["scenarios"]:
+    print(f"{scenario['scenarioName']}: EBIT = {scenario['pnl']['ebit']:,}")
+```
+
+```javascript Node.js
+const params = new URLSearchParams({
+  planId: "plan_9xKz2",
+  scenarioIds: "scen_abc,scen_def",
+  interval: "FY",
+  currency: "USD",
+});
+
+const resp = await fetch(
+  `https://api.simcel.io/insights/v1/pnl-summary?${params}`,
+  { headers: { Authorization: `Bearer ${accessToken}` } }
+);
+
+const data = await resp.json();
+```
+</CodeGroup>
+
+**Response:**
+
+```json
+{
+  "meta": {
+    "planId": "plan_9xKz2",
+    "currency": "USD",
+    "interval": "FY",
+    "generatedAt": "2025-04-14T10:32:00Z"
+  },
+  "scenarios": [
+    {
+      "scenarioId": "scen_abc",
+      "scenarioName": "Committed",
+      "pnl": {
+        "grossFIESales": 5200000,
+        "netFIESales": 4888000,
+        "cogs": 2100000,
+        "grossProfit": 2788000,
+        "ebit": 2368000,
+        "ebitPercent": 0.484,
+        "dpm": 1850000,
+        "dpmPercent": 0.378
+      }
+    },
+    {
+      "scenarioId": "scen_def",
+      "scenarioName": "Optimistic",
+      "pnl": {
+        "grossFIESales": 6100000,
+        "netFIESales": 5734000,
+        "cogs": 2450000,
+        "grossProfit": 3284000,
+        "ebit": 2860000,
+        "ebitPercent": 0.499,
+        "dpm": 2200000,
+        "dpmPercent": 0.383
+      }
+    }
+  ]
+}
+```
+
+You're in. Next, explore the full [API Reference](/api-reference/overview) or jump into the [AI Agent guide](/guides/first-ai-agent).

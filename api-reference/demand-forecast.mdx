@@ -1,0 +1,57 @@
+---
+title: Demand Forecast
+description: Get demand signals across products, regions, and time — per scenario
+openapi: GET /demand-forecast
+---
+
+## When to use this
+
+Use `/demand-forecast` when you want to:
+
+- Track demand evolution over time across planning scenarios
+- Detect demand risk (low fill rates, poor forecast accuracy)
+- Compare an optimistic vs conservative demand plan
+- Feed an AI agent with time-series demand data for anomaly detection
+
+## Key metrics
+
+| Field | Description |
+|---|---|
+| `demandVolume` | Total ordered units in the period |
+| `demandValue` | Total demand at gross sales value (plan currency) |
+| `fillRate` | Share of demand that was fulfilled (0–1) |
+| `forecastAccuracy` | 1 − MAPE. How close the forecast was to actuals (only meaningful on `actual` scenario) |
+
+## groupBy options
+
+| Value | Description |
+|---|---|
+| `product` | Aggregate across all regions per product family |
+| `sku` | Granular SKU-level breakdown |
+| `region` | Geographic region grouping |
+| `channel` | Sales channel (modern trade, e-comm, traditional, etc.) |
+
+## Example: Monthly demand trend for two scenarios
+
+```python
+import requests
+
+client = SimcelClient(api_key="sk_live_...")
+
+resp = client.get("/demand-forecast", params={
+    "planId": "plan_9xKz2",
+    "scenarioIds": "scen_committed,scen_optimistic",
+    "interval": "M",
+    "dateFrom": "2025-01-01",
+    "dateTo": "2025-12-31",
+    "groupBy": "product",
+})
+
+for scenario in resp.json()["scenarios"]:
+    total_demand = sum(row["demandValue"] for row in scenario["series"])
+    print(f"{scenario['scenarioName']}: ${total_demand:,.0f} total demand")
+```
+
+<Note>
+  `forecastAccuracy` is only meaningful when querying the `actual` scenario or comparing forecast scenarios against actuals. In pure what-if scenarios it reflects the internal model accuracy.
+</Note>

@@ -1,0 +1,60 @@
+---
+title: Errors
+description: Error codes and troubleshooting for the SIMCEL Insights API
+---
+
+All errors follow a consistent shape:
+
+```json
+{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Human-readable description of the problem"
+}
+```
+
+## HTTP status codes
+
+| Code | Meaning | Common cause |
+|---|---|---|
+| `400` | Bad Request | Missing required parameter, invalid `interval`, too many `scenarioIds` |
+| `401` | Unauthorized | Missing `Authorization` header, expired token |
+| `403` | Forbidden | Token lacks required scope |
+| `404` | Not Found | `planId` or `scenarioId` doesn't exist, or you don't have access |
+| `422` | Unprocessable Entity | Parameter values are syntactically valid but semantically wrong (e.g. `dateFrom` after `dateTo`) |
+| `429` | Too Many Requests | Rate limit exceeded — see [Rate Limits](/rate-limits) |
+| `500` | Internal Server Error | Something went wrong on our end — [contact support](mailto:support@simcel.io) |
+
+## Common error messages
+
+<AccordionGroup>
+  <Accordion title="'scenarioIds: maximum 3 scenarios allowed'">
+    You passed more than 3 scenario IDs. The Insights API supports a maximum of 3 scenarios per request for performance reasons.
+
+    **Fix:** Split into multiple requests if you need more than 3 scenarios.
+  </Accordion>
+
+  <Accordion title="'Bearer token is missing or has expired'">
+    Your token has expired (tokens last 1 hour) or you forgot to include the `Authorization` header.
+
+    **Fix:** Re-authenticate via `POST /auth/token` and use the new token.
+  </Accordion>
+
+  <Accordion title="'Plan plan_xxx not found or you do not have access'">
+    The `planId` doesn't exist in your workspace, or your API key doesn't have access to it.
+
+    **Fix:** List your available plans with `GET /insights/v1/plans` to find valid IDs.
+  </Accordion>
+
+  <Accordion title="'dateFrom must be before dateTo'">
+    Your date range is inverted.
+
+    **Fix:** Ensure `dateFrom` is earlier than `dateTo`.
+  </Accordion>
+
+  <Accordion title="'Scenario scen_xxx has no computed output'">
+    The scenario exists but has never been simulated, or the simulation is still running.
+
+    **Fix:** Run the scenario simulation in the SIMCEL app first, then retry. The `meta.generatedAt` field will be present once data is available.
+  </Accordion>
+</AccordionGroup>

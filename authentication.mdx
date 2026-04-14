@@ -1,0 +1,123 @@
+---
+title: Authentication
+description: How to authenticate with the SIMCEL Insights API
+---
+
+The SIMCEL API uses **API keys** to identify your integration, and short-lived **JWT bearer tokens** for request authentication.
+
+## Generate an API Key
+
+1. Log in to [app.simcel.io](https://app.simcel.io)
+2. Go to **Settings → API Keys**
+3. Click **Create new key**
+4. Give it a name (e.g. `my-ai-agent-prod`) and set the scopes
+5. Copy the key — **it will only be shown once**
+
+<Warning>
+  Treat API keys like passwords. Do not commit them to source control. Use environment variables or a secrets manager.
+</Warning>
+
+---
+
+## Exchange key for a token
+
+```http
+POST https://api.simcel.io/auth/token
+Content-Type: application/json
+
+{
+  "apiKey": "sk_live_..."
+}
+```
+
+**Response:**
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 3600,
+  "tokenType": "Bearer"
+}
+```
+
+Tokens expire after **3600 seconds (1 hour)**.
+
+---
+
+## Use the token
+
+Pass the token as a `Bearer` header on every API request:
+
+```http
+GET https://api.simcel.io/insights/v1/pnl-summary?planId=...
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+---
+
+## Token refresh strategy
+
+For long-running processes or agents, implement a refresh strategy:
+
+```python
+import requests
+import time
+
+class SimcelClient:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self._token = None
+        self._token_expiry = 0
+
+    def _get_token(self) -> str:
+        if time.time() < self._token_expiry - 60:  # refresh 60s before expiry
+            return self._token
+
+        resp = requests.post(
+            "https://api.simcel.io/auth/token",
+            json={"apiKey": self.api_key}
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        self._token = data["accessToken"]
+        self._token_expiry = time.time() + data["expiresIn"]
+        return self._token
+
+    def get(self, path: str, **kwargs):
+        headers = kwargs.pop("headers", {})
+        headers["Authorization"] = f"Bearer {self._get_token()}"
+        return requests.get(
+            f"https://api.simcel.io/insights/v1{path}",
+            headers=headers,
+            **kwargs
+        )
+```
+
+---
+
+## API Key scopes
+
+| Scope | Description |
+|---|---|
+| `insights:read` | Read access to all Insights API endpoints |
+| `plans:read` | List plans and scenarios |
+| `admin` | Full access (not recommended for integrations) |
+
+Most AI agent use cases only need `insights:read` + `plans:read`.
+
+---
+
+## Errors
+
+| Status | Meaning |
+|---|---|
+| `401 Unauthorized` | Token missing, malformed, or expired |
+| `403 Forbidden` | Token is valid but lacks required scope |
+
+```json
+{
+  "statusCode": 401,
+  "error": "Unauthorized",
+  "message": "Bearer token is missing or has expired"
+}
+```

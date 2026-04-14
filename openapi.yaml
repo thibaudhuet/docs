@@ -1,0 +1,583 @@
+openapi: 3.1.0
+info:
+  title: SIMCEL Insights API
+  version: 1.0.0
+  description: |
+    The SIMCEL Insights API gives you programmatic access to computed supply chain KPIs,
+    P&L data, demand forecasts, and sustainability metrics — across multiple scenarios.
+
+    Use this API to build AI agents, custom dashboards, or automated reporting workflows
+    on top of your SIMCEL simulation data.
+  contact:
+    name: SIMCEL Support
+    email: support@simcel.io
+    url: https://developers.simcel.io
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.simcel.io/insights/v1
+    description: Production
+  - url: https://api-staging.simcel.io/insights/v1
+    description: Staging
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Demand
+    description: Demand forecast and accuracy metrics
+  - name: Finance
+    description: Profit & Loss computed metrics
+  - name: Supply
+    description: Supply chain performance and inventory
+  - name: Sustainability
+    description: CO2 footprint and sustainability metrics
+
+paths:
+  /demand-forecast:
+    get:
+      operationId: getDemandForecast
+      summary: Get demand forecast
+      description: |
+        Returns computed demand signals aggregated by time period across one or more scenarios.
+        Includes demand volume, demand value, fill rate, and forecast accuracy.
+
+        Compare multiple scenarios side-by-side to evaluate the demand impact of planning decisions.
+      tags:
+        - Demand
+      parameters:
+        - $ref: '#/components/parameters/planId'
+        - $ref: '#/components/parameters/scenarioIds'
+        - $ref: '#/components/parameters/interval'
+        - $ref: '#/components/parameters/dateFrom'
+        - $ref: '#/components/parameters/dateTo'
+        - $ref: '#/components/parameters/currency'
+        - name: groupBy
+          in: query
+          description: Dimension to group results by
+          schema:
+            type: string
+            enum: [product, region, channel, sku]
+            default: product
+      responses:
+        '200':
+          description: Demand forecast data per scenario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandForecastResponse'
+              example:
+                meta:
+                  planId: "plan_9xKz2"
+                  interval: "M"
+                  currency: "USD"
+                  generatedAt: "2025-04-14T10:32:00Z"
+                scenarios:
+                  - scenarioId: "scen_abc"
+                    scenarioName: "Optimistic 2025"
+                    scenarioColor: "#6366F1"
+                    series:
+                      - period: "2025-01"
+                        demandVolume: 12400
+                        demandValue: 248000
+                        fillRate: 0.94
+                        forecastAccuracy: 0.88
+                      - period: "2025-02"
+                        demandVolume: 13100
+                        demandValue: 262000
+                        fillRate: 0.96
+                        forecastAccuracy: 0.91
+                  - scenarioId: "scen_def"
+                    scenarioName: "Conservative 2025"
+                    scenarioColor: "#06B6D4"
+                    series:
+                      - period: "2025-01"
+                        demandVolume: 10800
+                        demandValue: 216000
+                        fillRate: 0.91
+                        forecastAccuracy: 0.85
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /pnl-summary:
+    get:
+      operationId: getPnlSummary
+      summary: Get P&L summary
+      description: |
+        Returns the full Profit & Loss stack computed per scenario.
+        Covers gross sales, trade expenses, COGS, gross profit, supply chain costs, EBIT, and DPM.
+
+        All values are returned in the requested currency. Percentage variants (e.g. `ebitPercent`)
+        are expressed as decimals (0.48 = 48%).
+      tags:
+        - Finance
+      parameters:
+        - $ref: '#/components/parameters/planId'
+        - $ref: '#/components/parameters/scenarioIds'
+        - $ref: '#/components/parameters/currency'
+        - name: interval
+          in: query
+          description: Time aggregation level
+          schema:
+            type: string
+            enum: [M, FY]
+            default: FY
+        - $ref: '#/components/parameters/dateFrom'
+        - $ref: '#/components/parameters/dateTo'
+      responses:
+        '200':
+          description: P&L summary per scenario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PnlSummaryResponse'
+              example:
+                meta:
+                  planId: "plan_9xKz2"
+                  currency: "USD"
+                  interval: "FY"
+                scenarios:
+                  - scenarioId: "scen_abc"
+                    scenarioName: "Optimistic 2025"
+                    scenarioColor: "#6366F1"
+                    pnl:
+                      grossFIESales: 5200000
+                      tradeExpenses: 312000
+                      netFIESales: 4888000
+                      cogs: 2100000
+                      cogsPercent: 0.429
+                      grossProfit: 2788000
+                      supplyChainCost: 420000
+                      storageAndHandling: 180000
+                      transport: 240000
+                      ebit: 2368000
+                      ebitPercent: 0.484
+                      dpm: 1850000
+                      dpmPercent: 0.378
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /supply-performance:
+    get:
+      operationId: getSupplyPerformance
+      summary: Get supply chain performance
+      description: |
+        Returns supply chain KPIs including closing stock levels, service levels,
+        dispatch volumes, and storage costs — grouped by distribution center, SKU, or region.
+
+        Use this endpoint to monitor inventory health and fulfillment efficiency across scenarios.
+      tags:
+        - Supply
+      parameters:
+        - $ref: '#/components/parameters/planId'
+        - $ref: '#/components/parameters/scenarioIds'
+        - $ref: '#/components/parameters/interval'
+        - $ref: '#/components/parameters/dateFrom'
+        - $ref: '#/components/parameters/dateTo'
+        - $ref: '#/components/parameters/currency'
+        - name: groupBy
+          in: query
+          description: Dimension to group results by
+          schema:
+            type: string
+            enum: [sku, dc, region]
+            default: dc
+      responses:
+        '200':
+          description: Supply performance data per scenario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyPerformanceResponse'
+              example:
+                meta:
+                  planId: "plan_9xKz2"
+                  interval: "M"
+                  currency: "USD"
+                scenarios:
+                  - scenarioId: "scen_abc"
+                    scenarioName: "Optimistic 2025"
+                    scenarioColor: "#6366F1"
+                    series:
+                      - period: "2025-01"
+                        groupKey: "DC-PARIS"
+                        closingStock: 8400
+                        closingStockGSV: 168000
+                        serviceLevel: 0.97
+                        dispatchVolume: 11200
+                        storageAndHandlingCost: 32000
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sustainability:
+    get:
+      operationId: getSustainability
+      summary: Get sustainability / CO2 metrics
+      description: |
+        Returns CO2 footprint data broken down by inbound, storage, and outbound emissions,
+        comparable across scenarios.
+
+        All CO2 values are in metric tonnes of CO2 equivalent (tCO2e).
+        Use this endpoint for ESG reporting, carbon budget forecasting, or Green-KPI monitoring.
+      tags:
+        - Sustainability
+      parameters:
+        - $ref: '#/components/parameters/planId'
+        - $ref: '#/components/parameters/scenarioIds'
+        - $ref: '#/components/parameters/interval'
+        - $ref: '#/components/parameters/dateFrom'
+        - $ref: '#/components/parameters/dateTo'
+        - name: groupBy
+          in: query
+          description: Dimension to group results by
+          schema:
+            type: string
+            enum: [dc, transport_mode, region]
+            default: dc
+      responses:
+        '200':
+          description: CO2 metrics per scenario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SustainabilityResponse'
+              example:
+                meta:
+                  planId: "plan_9xKz2"
+                  interval: "FY"
+                  unit: "tCO2e"
+                scenarios:
+                  - scenarioId: "scen_abc"
+                    scenarioName: "Optimistic 2025"
+                    scenarioColor: "#6366F1"
+                    summary:
+                      totalCO2: 1842
+                      inboundCO2: 720
+                      storageCO2: 310
+                      outboundCO2: 812
+                    breakdown:
+                      - groupKey: "DC-PARIS"
+                        totalCO2: 440
+                        inboundCO2: 180
+                        storageCO2: 80
+                        outboundCO2: 180
+                      - groupKey: "DC-LONDON"
+                        totalCO2: 380
+                        inboundCO2: 160
+                        storageCO2: 70
+                        outboundCO2: 150
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Obtain a token via `POST /auth/token` using your API key and secret.
+        Tokens expire after 1 hour.
+
+  parameters:
+    planId:
+      name: planId
+      in: query
+      required: true
+      description: The plan identifier to query data against
+      schema:
+        type: string
+      example: plan_9xKz2
+
+    scenarioIds:
+      name: scenarioIds
+      in: query
+      required: true
+      description: Comma-separated list of scenario IDs (max 3)
+      schema:
+        type: array
+        items:
+          type: string
+        maxItems: 3
+      style: form
+      explode: false
+      example: scen_abc,scen_def
+
+    interval:
+      name: interval
+      in: query
+      description: Time aggregation bucket
+      schema:
+        type: string
+        enum: [D, W, M, FY]
+        default: M
+
+    dateFrom:
+      name: dateFrom
+      in: query
+      description: Start of the date range (ISO 8601)
+      schema:
+        type: string
+        format: date
+      example: "2025-01-01"
+
+    dateTo:
+      name: dateTo
+      in: query
+      description: End of the date range (ISO 8601)
+      schema:
+        type: string
+        format: date
+      example: "2025-12-31"
+
+    currency:
+      name: currency
+      in: query
+      description: ISO 4217 currency code for monetary values
+      schema:
+        type: string
+        default: USD
+      example: EUR
+
+  schemas:
+    ResponseMeta:
+      type: object
+      properties:
+        planId:
+          type: string
+        interval:
+          type: string
+          enum: [D, W, M, FY]
+        currency:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+
+    ScenarioBase:
+      type: object
+      properties:
+        scenarioId:
+          type: string
+        scenarioName:
+          type: string
+        scenarioColor:
+          type: string
+          description: Hex color assigned to this scenario in SIMCEL
+
+    DemandForecastResponse:
+      type: object
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        scenarios:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/ScenarioBase'
+              - type: object
+                properties:
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period:
+                          type: string
+                          description: Start date of the bucket (ISO 8601)
+                        demandVolume:
+                          type: number
+                          description: Total demand in units
+                        demandValue:
+                          type: number
+                          description: Total demand value in plan currency
+                        fillRate:
+                          type: number
+                          description: Fulfilled demand ratio (0–1)
+                        forecastAccuracy:
+                          type: number
+                          description: Forecast accuracy ratio (0–1)
+
+    PnlSummaryResponse:
+      type: object
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        scenarios:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/ScenarioBase'
+              - type: object
+                properties:
+                  pnl:
+                    type: object
+                    properties:
+                      grossFIESales:
+                        type: number
+                      tradeExpenses:
+                        type: number
+                      netFIESales:
+                        type: number
+                      cogs:
+                        type: number
+                      cogsPercent:
+                        type: number
+                      grossProfit:
+                        type: number
+                      supplyChainCost:
+                        type: number
+                      storageAndHandling:
+                        type: number
+                      transport:
+                        type: number
+                      ebit:
+                        type: number
+                      ebitPercent:
+                        type: number
+                      dpm:
+                        type: number
+                      dpmPercent:
+                        type: number
+
+    SupplyPerformanceResponse:
+      type: object
+      properties:
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        scenarios:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/ScenarioBase'
+              - type: object
+                properties:
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period:
+                          type: string
+                        groupKey:
+                          type: string
+                          description: Value of the groupBy dimension
+                        closingStock:
+                          type: number
+                          description: Month-end closing stock in units
+                        closingStockGSV:
+                          type: number
+                          description: Closing stock at gross sales value
+                        serviceLevel:
+                          type: number
+                          description: Service level ratio (0–1)
+                        dispatchVolume:
+                          type: number
+                        storageAndHandlingCost:
+                          type: number
+
+    SustainabilityResponse:
+      type: object
+      properties:
+        meta:
+          allOf:
+            - $ref: '#/components/schemas/ResponseMeta'
+            - type: object
+              properties:
+                unit:
+                  type: string
+                  default: tCO2e
+        scenarios:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/ScenarioBase'
+              - type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      totalCO2:
+                        type: number
+                      inboundCO2:
+                        type: number
+                      storageCO2:
+                        type: number
+                      outboundCO2:
+                        type: number
+                  breakdown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        groupKey:
+                          type: string
+                        totalCO2:
+                          type: number
+                        inboundCO2:
+                          type: number
+                        storageCO2:
+                          type: number
+                        outboundCO2:
+                          type: number
+
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 400
+            error: Bad Request
+            message: "scenarioIds: maximum 3 scenarios allowed"
+
+    Unauthorized:
+      description: Missing or invalid API token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 401
+            error: Unauthorized
+            message: "Bearer token is missing or has expired"
+
+    NotFound:
+      description: Plan or scenario not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 404
+            error: Not Found
+            message: "Plan plan_9xKz2 not found or you do not have access"

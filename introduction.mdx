@@ -1,0 +1,94 @@
+---
+title: Introduction
+description: Build AI agents and analytics on top of your SIMCEL supply chain data
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.png"
+  alt="SIMCEL Developer Portal"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.png"
+  alt="SIMCEL Developer Portal"
+/>
+
+## Welcome to the SIMCEL API
+
+SIMCEL is an Integrated Business Planning (IBP) platform that runs supply chain simulations across multiple scenarios — combining demand forecasts, supply planning, financial modelling, and sustainability metrics in one place.
+
+The **SIMCEL Insights API** exposes the computed output of those simulations so you can:
+
+- Build **AI agents** that reason over your supply chain data
+- Create **custom dashboards** outside of the SIMCEL app
+- Feed **downstream systems** (ERP, BI tools, reports) with scenario-aware KPIs
+- Power **automated ESG reporting** with real CO2 footprint data
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart"
+    icon="bolt"
+    href="/quickstart"
+  >
+    Make your first API call in under 5 minutes
+  </Card>
+  <Card
+    title="Authentication"
+    icon="lock"
+    href="/authentication"
+  >
+    Learn how to obtain and use API tokens
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/overview"
+  >
+    Browse all Insights API endpoints
+  </Card>
+  <Card
+    title="Build an AI Agent"
+    icon="robot"
+    href="/guides/first-ai-agent"
+  >
+    Step-by-step guide using Python + OpenAI
+  </Card>
+</CardGroup>
+
+## Core concepts
+
+The SIMCEL API is built around three key entities:
+
+<AccordionGroup>
+  <Accordion title="Plans">
+    A **Plan** is the top-level container for your IBP cycle. It defines the planning horizon, currency, and the set of scenarios being compared. Every API request requires a `planId`.
+  </Accordion>
+
+  <Accordion title="Scenarios">
+    A **Scenario** is a simulation run — it could be your *Actual*, *Committed*, *Optimistic*, or *Conservative* plan. The Insights API lets you compare up to **3 scenarios** in a single request, which is the core value of SIMCEL.
+  </Accordion>
+
+  <Accordion title="KPIs">
+    KPIs are the computed outputs of each scenario simulation. The Insights API surfaces **aggregated, finance-ready KPIs** (not raw atomic data) — things like Net FIE Sales, EBIT, Service Level, and CO2 footprint.
+  </Accordion>
+</AccordionGroup>
+
+## Base URL
+
+```
+https://api.simcel.io/insights/v1
+```
+
+## What's available today
+
+| Endpoint | Description |
+|---|---|
+| `GET /demand-forecast` | Demand volume, value, fill rate, forecast accuracy |
+| `GET /pnl-summary` | Full P&L stack: gross sales → EBIT → DPM |
+| `GET /supply-performance` | Closing stock, service levels, dispatch volumes |
+| `GET /sustainability` | CO2 by inbound / storage / outbound |
+
+<Note>
+  The Insights API is in **public beta**. Endpoints and response shapes are stable but may evolve. Breaking changes will be announced in the [Changelog](/changelog) with at least 30 days notice.
+</Note>

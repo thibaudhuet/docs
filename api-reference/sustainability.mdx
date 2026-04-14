@@ -1,0 +1,74 @@
+---
+title: Sustainability
+description: CO2 footprint by inbound, storage, and outbound — per scenario
+openapi: GET /sustainability
+---
+
+## When to use this
+
+Use `/sustainability` when you want to:
+
+- Report CO2 emissions per planning scenario for ESG disclosures
+- Identify which distribution centers or transport legs are highest-impact
+- Compare the carbon cost of different supply chain configurations
+- Set and track carbon budget targets across planning cycles
+
+## CO2 breakdown
+
+SIMCEL tracks three emission scopes within the supply chain:
+
+| Field | Description |
+|---|---|
+| `inboundCO2` | Emissions from supplier → DC transport |
+| `storageCO2` | Emissions from DC operations and warehousing |
+| `outboundCO2` | Emissions from DC → customer last-mile delivery |
+| `totalCO2` | Sum of all three (inbound + storage + outbound) |
+
+All values are in **tCO2e** (metric tonnes of CO2 equivalent).
+
+## groupBy options
+
+| Value | Description |
+|---|---|
+| `dc` | Per distribution center |
+| `region` | Geographic region |
+| `transport_mode` | Road, air, sea, rail |
+
+## Example: Find the highest-carbon DC
+
+```python
+resp = client.get("/sustainability", params={
+    "planId": "plan_9xKz2",
+    "scenarioIds": "scen_committed",
+    "interval": "FY",
+    "groupBy": "dc",
+})
+
+scenario = resp.json()["scenarios"][0]
+
+ranked = sorted(
+    scenario["breakdown"],
+    key=lambda x: x["totalCO2"],
+    reverse=True
+)
+
+print("Top 3 highest-emission DCs:")
+for dc in ranked[:3]:
+    print(f"  {dc['groupKey']}: {dc['totalCO2']:.0f} tCO2e")
+```
+
+## Example: Carbon cost of switching transport modes
+
+```python
+by_mode = {s["scenarioName"]: s for s in resp.json()["scenarios"]}
+
+road = by_mode["Road-Heavy"]["summary"]["totalCO2"]
+intermodal = by_mode["Intermodal"]["summary"]["totalCO2"]
+
+print(f"Carbon saving from switching to intermodal: {road - intermodal:.0f} tCO2e")
+print(f"Reduction: {(road - intermodal) / road:.1%}")
+```
+
+<Note>
+  CO2 calculations are based on emission factors configured in your SIMCEL network setup (distance matrices × emission factors per transport mode × volume). Contact your SIMCEL customer success manager to update your emission factors.
+</Note>

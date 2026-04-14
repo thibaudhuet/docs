@@ -1,0 +1,119 @@
+---
+title: Scenario Comparison Patterns
+description: Common patterns for comparing SIMCEL scenarios programmatically
+---
+
+## Why scenario comparison matters
+
+SIMCEL's core value is running multiple "what-if" simulations simultaneously. The Insights API lets you extract and compare those scenarios in your own code. Here are the most useful patterns.
+
+---
+
+## Pattern 1: Delta table
+
+Generate a variance table between a baseline (Committed) and one or more alternatives.
+
+```python
+def delta_table(base_name: str, scenarios: list[dict]) -> None:
+    base = next(s for s in scenarios if s["scenarioName"] == base_name)
+    others = [s for s in scenarios if s["scenarioName"] != base_name]
+
+    metrics = ["netFIESales", "grossProfit", "ebit", "dpm"]
+
+    print(f"{'Metric':<22} {'Base':>14}", end="")
+    for s in others:
+        print(f"  {s['scenarioName']:>16}  {'Δ vs Base':>12}", end="")
+    print()
+    print("─" * 80)
+
+    for m in metrics:
+        base_val = base["pnl"][m]
+        print(f"{m:<22} {base_val:>14,.0f}", end="")
+        for s in others:
+            val = s["pnl"][m]
+            delta = val - base_val
+            print(f"  {val:>16,.0f}  {delta:>+12,.0f}", end="")
+        print()
+```
+
+---
+
+## Pattern 2: Best-case / worst-case bounds
+
+Automatically identify the min and max across all scenarios for a given metric.
+
+```python
+def scenario_bounds(scenarios: list[dict], metric: str) -> dict:
+    values = {s["scenarioName"]: s["pnl"][metric] for s in scenarios}
+    best = max(values, key=values.get)
+    worst = min(values, key=values.get)
+
+    return {
+        "metric": metric,
+        "best": {"scenario": best, "value": values[best]},
+        "worst": {"scenario": worst, "value": values[worst]},
+        "spread": values[best] - values[worst],
+        "spread_pct": (values[best] - values[worst]) / values[worst],
+    }
+
+bounds = scenario_bounds(data["scenarios"], "ebit")
+print(f"EBIT range: ${bounds['worst']['value']:,.0f} ({bounds['worst']['scenario']}) "
+      f"→ ${bounds['best']['value']:,.0f} ({bounds['best']['scenario']})")
+print(f"Spread: ${bounds['spread']:,.0f} ({bounds['spread_pct']:.1%})")
+```
+
+---
+
+## Pattern 3: Monthly trend divergence
+
+Find the month where two scenarios start to diverge significantly.
+
+```python
+def find_divergence_month(
+    scenario_a: dict,
+    scenario_b: dict,
+    metric: str = "demandValue",
+    threshold_pct: float = 0.05,
+) -> str | None:
+    """Return the first month where scenarios diverge by more than threshold_pct."""
+    series_a = {row["period"]: row[metric] for row in scenario_a["series"]}
+    series_b = {row["period"]: row[metric] for row in scenario_b["series"]}
+
+    for period in sorted(series_a.keys()):
+        a, b = series_a[period], series_b.get(period, 0)
+        if a == 0:
+            continue
+        if abs(a - b) / a > threshold_pct:
+            return period
+
+    return None
+
+month = find_divergence_month(
+    data["scenarios"][0],   # Committed
+    data["scenarios"][1],   # Optimistic
+    metric="demandValue",
+    threshold_pct=0.05,
+)
+print(f"Scenarios diverge from: {month}")
+```
+
+---
+
+## Pattern 4: Scenario ranking by KPI
+
+Rank scenarios on any KPI in a single call.
+
+```python
+def rank_scenarios(scenarios: list[dict], metric: str, higher_is_better: bool = True):
+    ranked = sorted(
+        scenarios,
+        key=lambda s: s["pnl"][metric],
+        reverse=higher_is_better,
+    )
+    print(f"\nScenario ranking by {metric}:")
+    for i, s in enumerate(ranked, 1):
+        print(f"  {i}. {s['scenarioName']}: {s['pnl'][metric]:>14,.0f}")
+
+rank_scenarios(data["scenarios"], "ebit")
+rank_scenarios(data["scenarios"], "supplyChainCost", higher_is_better=False)
+```

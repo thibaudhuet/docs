@@ -1,0 +1,61 @@
+---
+title: Plans & Scenarios
+description: Understand the core data model of the SIMCEL API
+---
+
+## Plans
+
+A **Plan** represents an IBP (Integrated Business Planning) cycle. Typically you have one plan per fiscal year, though some organizations run rolling plans.
+
+Each plan defines:
+- The **planning horizon** (date range)
+- The **base currency**
+- The **network** of distribution centers, products, and channels being simulated
+- A set of **Scenarios** to compare
+
+Every Insights API call requires a `planId`. You can list your plans with:
+
+```http
+GET https://api.simcel.io/insights/v1/plans
+```
+
+---
+
+## Scenarios
+
+A **Scenario** is a complete simulation run within a plan. Think of it as a "what-if" version of your supply chain.
+
+### Common scenario types
+
+| Flag | Meaning |
+|---|---|
+| `actual` | Real historical data (actuals) |
+| `committed` | The officially committed plan |
+| `forecast base` | Statistical baseline forecast |
+| `primary` | Primary planning scenario |
+
+Scenarios without a flag are user-created what-if scenarios (e.g. "Optimistic +10% demand", "Transport strike impact").
+
+### Comparing scenarios
+
+The key power of SIMCEL is scenario comparison. The Insights API supports up to **3 scenarios per request**. Pass them as a comma-separated list:
+
+```
+?scenarioIds=scen_actual,scen_committed,scen_optimistic
+```
+
+The response always structures data per-scenario, making it easy to compute deltas in your own code.
+
+```python
+committed = next(s for s in data["scenarios"] if s["scenarioName"] == "Committed")
+optimistic = next(s for s in data["scenarios"] if s["scenarioName"] == "Optimistic")
+
+ebit_delta = optimistic["pnl"]["ebit"] - committed["pnl"]["ebit"]
+print(f"Upside potential: ${ebit_delta:,.0f}")
+```
+
+---
+
+## Data freshness
+
+Scenario data is recomputed each time a simulation runs inside SIMCEL. The `meta.generatedAt` field in every response tells you when the underlying data was last updated. For time-sensitive agents, check this field and alert if data is stale.

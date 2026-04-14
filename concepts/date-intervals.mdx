@@ -1,0 +1,35 @@
+---
+title: Date Intervals
+description: How time aggregation works in the SIMCEL Insights API
+---
+
+## Interval parameter
+
+All Insights API endpoints accept an `interval` parameter that controls how results are bucketed in time:
+
+| Value | Bucket size | `period` format |
+|---|---|---|
+| `D` | 1 day | `2025-01-15` |
+| `W` | 1 week (Mon–Sun) | `2025-W03` |
+| `M` | 1 calendar month | `2025-01` |
+| `FY` | Full fiscal year | `2025` |
+
+## Date range filtering
+
+Use `dateFrom` and `dateTo` to scope your query to a specific window. Both accept ISO 8601 dates (`YYYY-MM-DD`).
+
+```
+?dateFrom=2025-01-01&dateTo=2025-06-30&interval=M
+```
+
+This returns 6 rows per scenario (one per month, January through June).
+
+If you omit `dateFrom` / `dateTo`, the full plan horizon is returned.
+
+## Fiscal year
+
+The fiscal year definition (start month) is inherited from your plan configuration in SIMCEL. When `interval=FY`, a single aggregated row is returned per scenario regardless of the date range — covering the full fiscal year of your plan.
+
+<Note>
+  For AI agents doing year-over-year comparisons, use `interval=FY` for high-level summaries, then drill down with `interval=M` for trend analysis.
+</Note>

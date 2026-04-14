@@ -1,0 +1,53 @@
+---
+title: KPIs
+description: How SIMCEL computes and exposes supply chain KPIs
+---
+
+## KPI types
+
+SIMCEL distinguishes three categories of KPIs:
+
+### Base KPIs
+Raw simulation outputs — order quantities, dispatch volumes, inventory levels. These come directly from the SIMCEL-Core simulation engine.
+
+### Finance KPIs
+Computed from base KPIs using your plan's financial configuration:
+- **Gross FIE Sales** = Dispatch Volume × GSV per unit
+- **Net FIE Sales** = Gross Sales − Trade Expenses
+- **Gross Profit** = Net Sales − COGS
+- **EBIT** = Gross Profit − Supply Chain Costs − Marketing
+- **DPM** = EBIT − Administration & Overhead
+
+### Derived KPIs
+Cross-cutting metrics computed after aggregation:
+- **Service Level** = Fulfilled Demand / Total Demand
+- **Fill Rate** = Dispatched / Ordered
+- **Forecast Accuracy** = 1 − MAPE
+- **CO2 intensity** = CO2 / Revenue
+
+---
+
+## Units
+
+| KPI group | Unit |
+|---|---|
+| Volume (demand, dispatch, stock) | Units (cases, pallets — plan-specific) |
+| Value (sales, profit, costs) | ISO currency (plan default, overridable) |
+| Ratios (service level, fill rate) | Decimal 0–1 |
+| CO2 | tCO2e (metric tonnes CO2 equivalent) |
+| Percentages in P&L | Decimal 0–1 (e.g. `ebitPercent: 0.48` = 48%) |
+
+---
+
+## Aggregation
+
+The Insights API always returns **aggregated** KPIs — not row-level atomic data. The `interval` parameter controls the time bucket:
+
+| Interval | Description |
+|---|---|
+| `D` | Daily |
+| `W` | Weekly (Mon–Sun) |
+| `M` | Monthly (calendar month) |
+| `FY` | Full fiscal year total |
+
+The `groupBy` parameter on demand and supply endpoints controls the dimension breakdown (product, region, DC, channel).

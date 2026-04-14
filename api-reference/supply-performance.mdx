@@ -1,0 +1,87 @@
+---
+title: Supply Performance
+description: Inventory levels, service levels, and dispatch volumes — per DC, SKU, or region
+openapi: GET /supply-performance
+---
+
+## When to use this
+
+Use `/supply-performance` when you want to:
+
+- Monitor closing stock and prevent stockouts or overstock
+- Track service levels across distribution centers
+- Identify which DCs are underperforming on fill rate
+- Build an inventory health dashboard or alert system
+
+## Key metrics
+
+| Field | Description |
+|---|---|
+| `closingStock` | Month-end inventory in units |
+| `closingStockGSV` | Closing stock valued at gross sales value |
+| `serviceLevel` | % of customer demand met on time (0–1) |
+| `dispatchVolume` | Units dispatched out of the DC in the period |
+| `storageAndHandlingCost` | Cost of warehousing in the period (plan currency) |
+
+## groupBy options
+
+| Value | Groups by |
+|---|---|
+| `dc` | Distribution center |
+| `sku` | Individual product SKU |
+| `region` | Geographic region (aggregates across DCs) |
+
+## Example: Flag DCs with service level below 95%
+
+```python
+resp = client.get("/supply-performance", params={
+    "planId": "plan_9xKz2",
+    "scenarioIds": "scen_committed",
+    "interval": "M",
+    "groupBy": "dc",
+    "dateFrom": "2025-01-01",
+    "dateTo": "2025-03-31",
+})
+
+scenario = resp.json()["scenarios"][0]
+
+at_risk = [
+    row for row in scenario["series"]
+    if row["serviceLevel"] < 0.95
+]
+
+for row in at_risk:
+    print(f"⚠️  {row['groupKey']} | {row['period']} | SL={row['serviceLevel']:.1%}")
+```
+
+Output:
+```
+⚠️  DC-PARIS   | 2025-01 | SL=91.2%
+⚠️  DC-NAIROBI | 2025-02 | SL=88.7%
+```
+
+## Combining with demand data
+
+A common pattern is to pair supply performance with demand forecast data to compute a **coverage ratio** (weeks of stock):
+
+```python
+demand = client.get("/demand-forecast", params={
+    "planId": "plan_9xKz2",
+    "scenarioIds": "scen_committed",
+    "interval": "M",
+    "groupBy": "region",
+}).json()
+
+supply = client.get("/supply-performance", params={
+    "planId": "plan_9xKz2",
+    "scenarioIds": "scen_committed",
+    "interval": "M",
+    "groupBy": "region",
+}).json()
+
+# Build a coverage map: closing stock / monthly demand
+for d_row, s_row in zip(demand["scenarios"][0]["series"], supply["scenarios"][0]["series"]):
+    if d_row["demandVolume"] > 0:
+        weeks_coverage = (s_row["closingStock"] / d_row["demandVolume"]) * 4.33
+        print(f"{s_row['groupKey']} {s_row['period']}: {weeks_coverage:.1f} weeks of stock")
+```

@@ -1,0 +1,271 @@
+---
+title: Build Your First AI Agent
+description: Use Python + OpenAI to build an AI agent that answers questions about your supply chain
+---
+
+## What you'll build
+
+A conversational AI agent that can answer natural language questions like:
+
+> *"What's our EBIT margin in the Optimistic scenario compared to Committed?"*
+> *"Which distribution centers are below 95% service level this quarter?"*
+> *"How does switching to the Optimistic scenario affect our CO2 footprint?"*
+
+The agent calls SIMCEL Insights API to fetch real data, then uses an LLM to reason over it.
+
+## Prerequisites
+
+- Python 3.10+
+- SIMCEL API key
+- OpenAI API key
+
+```bash
+pip install openai requests python-dotenv
+```
+
+---
+
+## Step 1: Set up the SIMCEL client
+
+Create `simcel_client.py`:
+
+```python
+import requests
+import time
+import os
+
+class SimcelClient:
+    BASE_URL = "https://api.simcel.io/insights/v1"
+    AUTH_URL = "https://api.simcel.io/auth/token"
+
+    def __init__(self):
+        self.api_key = os.environ["SIMCEL_API_KEY"]
+        self._token = None
+        self._token_expiry = 0
+
+    def _get_token(self) -> str:
+        if self._token and time.time() < self._token_expiry - 60:
+            return self._token
+        resp = requests.post(self.AUTH_URL, json={"apiKey": self.api_key})
+        resp.raise_for_status()
+        data = resp.json()
+        self._token = data["accessToken"]
+        self._token_expiry = time.time() + data["expiresIn"]
+        return self._token
+
+    def get(self, path: str, **params) -> dict:
+        resp = requests.get(
+            f"{self.BASE_URL}{path}",
+            headers={"Authorization": f"Bearer {self._get_token()}"},
+            params=params,
+        )
+        resp.raise_for_status()
+        return resp.json()
+```
+
+---
+
+## Step 2: Define the agent tools
+
+```python
+import json
+
+client = SimcelClient()
+
+# These are the "tools" we'll expose to the LLM
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_pnl_summary",
+            "description": "Get Profit & Loss summary (EBIT, DPM, Net Sales, COGS) for one or more scenarios",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "plan_id": {"type": "string", "description": "The plan ID"},
+                    "scenario_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of scenario IDs (max 3)",
+                    },
+                    "interval": {
+                        "type": "string",
+                        "enum": ["M", "FY"],
+                        "default": "FY",
+                    },
+                },
+                "required": ["plan_id", "scenario_ids"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_supply_performance",
+            "description": "Get supply chain KPIs: closing stock, service level, dispatch volume per DC or region",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "plan_id": {"type": "string"},
+                    "scenario_ids": {"type": "array", "items": {"type": "string"}},
+                    "group_by": {
+                        "type": "string",
+                        "enum": ["dc", "sku", "region"],
+                        "default": "dc",
+                    },
+                    "interval": {"type": "string", "enum": ["D", "W", "M", "FY"], "default": "M"},
+                },
+                "required": ["plan_id", "scenario_ids"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_sustainability",
+            "description": "Get CO2 footprint data (inbound, storage, outbound) per scenario",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "plan_id": {"type": "string"},
+                    "scenario_ids": {"type": "array", "items": {"type": "string"}},
+                    "group_by": {
+                        "type": "string",
+                        "enum": ["dc", "region", "transport_mode"],
+                        "default": "dc",
+                    },
+                },
+                "required": ["plan_id", "scenario_ids"],
+            },
+        },
+    },
+]
+
+
+def call_tool(name: str, args: dict) -> str:
+    """Dispatch a tool call to the SIMCEL API and return JSON string."""
+    if name == "get_pnl_summary":
+        data = client.get(
+            "/pnl-summary",
+            planId=args["plan_id"],
+            scenarioIds=",".join(args["scenario_ids"]),
+            interval=args.get("interval", "FY"),
+        )
+    elif name == "get_supply_performance":
+        data = client.get(
+            "/supply-performance",
+            planId=args["plan_id"],
+            scenarioIds=",".join(args["scenario_ids"]),
+            groupBy=args.get("group_by", "dc"),
+            interval=args.get("interval", "M"),
+        )
+    elif name == "get_sustainability":
+        data = client.get(
+            "/sustainability",
+            planId=args["plan_id"],
+            scenarioIds=",".join(args["scenario_ids"]),
+            groupBy=args.get("group_by", "dc"),
+        )
+    else:
+        return json.dumps({"error": f"Unknown tool: {name}"})
+
+    return json.dumps(data)
+```
+
+---
+
+## Step 3: The agent loop
+
+```python
+from openai import OpenAI
+
+openai_client = OpenAI()
+
+SYSTEM_PROMPT = """
+You are a supply chain analyst AI assistant for SIMCEL.
+You help users understand their IBP data by querying the SIMCEL Insights API.
+
+The user's active plan ID is: {plan_id}
+Available scenarios:
+{scenarios_list}
+
+Always compare scenarios when relevant. Present numbers clearly:
+- Format monetary values with currency symbols and thousands separators
+- Format ratios as percentages (0.484 → 48.4%)
+- Highlight significant variances between scenarios
+"""
+
+def run_agent(user_question: str, plan_id: str, scenarios: list[dict]):
+    system = SYSTEM_PROMPT.format(
+        plan_id=plan_id,
+        scenarios_list="\n".join(
+            f"  - {s['name']} (id: {s['id']}, flags: {s.get('flags', [])})"
+            for s in scenarios
+        ),
+    )
+
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_question},
+    ]
+
+    while True:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            tools=TOOLS,
+            tool_choice="auto",
+        )
+
+        msg = response.choices[0].message
+        messages.append(msg)
+
+        if not msg.tool_calls:
+            return msg.content
+
+        # Execute all tool calls
+        for tool_call in msg.tool_calls:
+            args = json.loads(tool_call.function.arguments)
+            result = call_tool(tool_call.function.name, args)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": result,
+            })
+```
+
+---
+
+## Step 4: Try it out
+
+```python
+if __name__ == "__main__":
+    PLAN_ID = "plan_9xKz2"
+    SCENARIOS = [
+        {"id": "scen_abc", "name": "Committed", "flags": ["committed"]},
+        {"id": "scen_def", "name": "Optimistic"},
+        {"id": "scen_ghi", "name": "Actual", "flags": ["actual"]},
+    ]
+
+    questions = [
+        "What's the EBIT difference between Committed and Optimistic scenarios?",
+        "Which DCs have service levels below 95% in the Committed plan?",
+        "How does the Optimistic scenario affect our total CO2 footprint vs Committed?",
+    ]
+
+    for q in questions:
+        print(f"\n🤔 {q}")
+        print(f"🤖 {run_agent(q, PLAN_ID, SCENARIOS)}\n")
+        print("─" * 60)
+```
+
+---
+
+## Next steps
+
+- Add the `get_demand_forecast` tool for demand trend analysis
+- Connect the agent to Slack using Bolt for Python
+- Store conversation history in a database for multi-turn sessions
+- Add a `list_plans` tool so the agent can discover plan/scenario IDs dynamically
+
+See the [Scenario Comparison guide](/guides/scenario-comparison) for more advanced agent patterns.

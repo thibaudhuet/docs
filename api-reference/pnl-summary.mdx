@@ -1,0 +1,76 @@
+---
+title: P&L Summary
+description: Full Profit & Loss stack from Gross Sales to EBIT and DPM
+openapi: GET /pnl-summary
+---
+
+## When to use this
+
+Use `/pnl-summary` when you want to:
+
+- Compare financial performance across scenarios
+- Identify the biggest cost drivers impacting EBIT
+- Monitor DPM (Distributor Profit Margin) trends
+- Automate P&L reporting into Slack, email, or a BI tool
+
+## The P&L waterfall
+
+The response models the standard SIMCEL P&L cascade:
+
+```
+Gross FIE Sales
+  − Trade Expenses
+= Net FIE Sales
+  − COGS
+= Gross Profit
+  − Supply Chain Costs (Storage & Handling + Transport)
+  − Other Costs (Promotions, Medical Affairs, Administration)
+= EBIT
+  − Overhead
+= DPM (Distributor Profit Margin)
+```
+
+## Percent fields
+
+All `*Percent` fields (e.g. `ebitPercent`, `dpmPercent`, `cogsPercent`) are expressed as a **decimal ratio against Net FIE Sales**:
+
+```
+ebitPercent = ebit / netFIESales
+```
+
+So `ebitPercent: 0.484` means **48.4% EBIT margin**.
+
+## Example: P&L variance between scenarios
+
+```python
+resp = client.get("/pnl-summary", params={
+    "planId": "plan_9xKz2",
+    "scenarioIds": "scen_committed,scen_optimistic",
+    "interval": "FY",
+    "currency": "EUR",
+})
+
+scenarios = {s["scenarioName"]: s["pnl"] for s in resp.json()["scenarios"]}
+
+committed = scenarios["Committed"]
+optimistic = scenarios["Optimistic"]
+
+print(f"EBIT upside:   €{optimistic['ebit'] - committed['ebit']:>12,.0f}")
+print(f"Margin delta:  {(optimistic['ebitPercent'] - committed['ebitPercent']) * 100:+.1f}pp")
+print(f"Net Sales gap: €{optimistic['netFIESales'] - committed['netFIESales']:>12,.0f}")
+```
+
+Output:
+```
+EBIT upside:     €492,000
+Margin delta:   +1.5pp
+Net Sales gap:   €846,000
+```
+
+## interval support
+
+The P&L endpoint supports `M` (monthly) and `FY` (full year). For monthly, the response contains a `series` array with one P&L object per month instead of a single `pnl` object.
+
+<Tip>
+  For AI agents doing financial analysis, start with `interval=FY` to get the annual picture, then drill down to `interval=M` to identify which months drove the variance.
+</Tip>

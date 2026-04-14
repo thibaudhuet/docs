@@ -1,0 +1,89 @@
+---
+title: API Overview
+description: The SIMCEL Insights API at a glance
+---
+
+## Base URL
+
+```
+https://api.simcel.io/insights/v1
+```
+
+## Available endpoints
+
+<CardGroup cols={2}>
+  <Card title="Demand Forecast" icon="chart-line" href="/api-reference/demand-forecast">
+    Demand volume, value, fill rate, and forecast accuracy over time
+  </Card>
+  <Card title="P&L Summary" icon="dollar-sign" href="/api-reference/pnl-summary">
+    Full Profit & Loss stack from Gross Sales down to EBIT and DPM
+  </Card>
+  <Card title="Supply Performance" icon="warehouse" href="/api-reference/supply-performance">
+    Closing stock, service levels, dispatch volumes by DC or SKU
+  </Card>
+  <Card title="Sustainability" icon="leaf" href="/api-reference/sustainability">
+    CO2 footprint broken down by inbound, storage, and outbound
+  </Card>
+</CardGroup>
+
+---
+
+## Common request parameters
+
+All Insights endpoints share these required parameters:
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `planId` | string | ✅ | The plan to query |
+| `scenarioIds` | string[] | ✅ | Comma-separated scenario IDs (max 3) |
+| `interval` | `D\|W\|M\|FY` | — | Time aggregation, default `M` |
+| `dateFrom` | date | — | ISO 8601 start date |
+| `dateTo` | date | — | ISO 8601 end date |
+| `currency` | string | — | ISO 4217 code, default: plan currency |
+
+---
+
+## Common response envelope
+
+Every response follows this shape:
+
+```json
+{
+  "meta": {
+    "planId": "plan_9xKz2",
+    "interval": "M",
+    "currency": "USD",
+    "generatedAt": "2025-04-14T10:32:00Z"
+  },
+  "scenarios": [
+    {
+      "scenarioId": "scen_abc",
+      "scenarioName": "Committed",
+      "scenarioColor": "#6366F1",
+      // endpoint-specific data
+    }
+  ]
+}
+```
+
+The `scenarios` array always preserves the order of `scenarioIds` you passed in.
+
+---
+
+## Rate limits
+
+| Plan | Requests/minute | Requests/day |
+|---|---|---|
+| Starter | 60 | 10,000 |
+| Growth | 300 | 100,000 |
+| Enterprise | Custom | Custom |
+
+Rate limit headers are included on every response:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 58
+X-RateLimit-Reset: 1713085320
+```
+
+See [Rate Limits](/rate-limits) for full details.
