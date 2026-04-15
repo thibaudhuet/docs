@@ -35,8 +35,8 @@ import time
 import os
 
 class SimcelClient:
-    BASE_URL = "https://api.simcel.io/insights/v1"
-    AUTH_URL = "https://api.simcel.io/auth/token"
+    BASE_URL = "https://api.simcel.io/api/insights/v1"
+    AUTH_URL = "https://api.simcel.io/api/auth/v1/token"
 
     def __init__(self):
         self.api_key = os.environ["SIMCEL_API_KEY"]
@@ -269,3 +269,4 @@ if __name__ == "__main__":
 - Add a `list_plans` tool so the agent can discover plan/scenario IDs dynamically
 
 See the [Scenario Comparison guide](/guides/scenario-comparison) for more advanced agent patterns.
+

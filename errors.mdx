@@ -37,7 +37,7 @@ All errors follow a consistent shape:
   <Accordion title="'Bearer token is missing or has expired'">
     Your token has expired (tokens last 1 hour) or you forgot to include the `Authorization` header.
 
-    **Fix:** Re-authenticate via `POST /auth/token` and use the new token.
+    **Fix:** Re-authenticate via `POST /api/auth/v1/token` and use the new token.
   </Accordion>
 
   <Accordion title="'Plan plan_xxx not found or you do not have access'">
@@ -58,3 +58,4 @@ All errors follow a consistent shape:
     **Fix:** Run the scenario simulation in the SIMCEL app first, then retry. The `meta.generatedAt` field will be present once data is available.
   </Accordion>
 </AccordionGroup>
+

@@ -16,9 +16,9 @@ info:
     name: Proprietary
 
 servers:
-  - url: https://api.simcel.io/insights/v1
+  - url: https://api.simcel.io/api/insights/v1
     description: Production
-  - url: https://api-staging.simcel.io/insights/v1
+  - url: https://api-staging.simcel.io/api/insights/v1
     description: Staging
 
 security:
@@ -294,7 +294,7 @@ components:
       description: OAuth2 Client Credentials flow.
       flows:
         clientCredentials:
-          tokenUrl: https://api.simcel.io/oauth/token
+          tokenUrl: https://api.simcel.io/api/oauth/v1/token
           scopes:
             insights:read: Read access to Insights API endpoints
             plans:read: Read access to plans and scenarios
@@ -304,7 +304,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Obtain a token via OAuth2 (`POST /oauth/token`) or API key exchange (`POST /auth/token`).
+        Obtain a token via OAuth2 (`POST /api/oauth/v1/token`) or API key exchange (`POST /api/auth/v1/token`).
         Tokens expire after 1 hour.
 
   parameters:
@@ -592,3 +592,4 @@ components:
             statusCode: 404
             error: Not Found
             message: "Plan plan_9xKz2 not found or you do not have access"
+

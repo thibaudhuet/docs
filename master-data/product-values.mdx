@@ -38,7 +38,7 @@ The simulation engine uses `GrossSalesValue` as the primary revenue driver.
 
 ```python
 resp = requests.get(
-    "https://api.simcel.io/master/v1/product-values",
+    "https://api.simcel.io/api/master/v1/product-values",
     headers={"Authorization": f"Bearer {token}"},
     params={
         "workspaceId": "ws_abc123",
@@ -64,7 +64,7 @@ Use `POST /product-values` to inject a price override for a specific plan. This 
 current_price = 24.50
 
 resp = requests.post(
-    "https://api.simcel.io/master/v1/product-values",
+    "https://api.simcel.io/api/master/v1/product-values",
     headers={
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
@@ -98,7 +98,7 @@ price_updates = [
 results = []
 for update in price_updates:
     resp = requests.post(
-        "https://api.simcel.io/master/v1/product-values",
+        "https://api.simcel.io/api/master/v1/product-values",
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         json={
             "workspaceId": "ws_abc123",
@@ -118,3 +118,4 @@ print(f"Updated {success}/{len(results)} prices successfully")
 <Note>
   Pricing overrides are scoped to a **plan** via `planId`. The same product–customer pair can have different prices across plans, allowing you to test the financial impact of price changes scenario-by-scenario.
 </Note>
+

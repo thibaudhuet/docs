@@ -15,14 +15,14 @@ description: Make your first SIMCEL API call in under 5 minutes
 Use OAuth2 Client Credentials or exchange your API key for a short-lived bearer token.
 
 ```bash OAuth2 (client credentials)
-curl -X POST https://api.simcel.io/oauth/token \
+curl -X POST https://api.simcel.io/api/oauth/v1/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&scope=insights:read plans:read"
 ```
 
 <CodeGroup>
 ```bash API key (cURL)
-curl -X POST https://api.simcel.io/auth/token \
+curl -X POST https://api.simcel.io/api/auth/v1/token \
   -H "Content-Type: application/json" \
   -d '{
     "apiKey": "sk_live_your_api_key_here"
@@ -32,7 +32,7 @@ curl -X POST https://api.simcel.io/auth/token \
 ```python API key (Python)
 import requests
 
-resp = requests.post("https://api.simcel.io/auth/token", json={
+resp = requests.post("https://api.simcel.io/api/auth/v1/token", json={
     "apiKey": "sk_live_your_api_key_here"
 })
 
@@ -41,7 +41,7 @@ print(token)
 ```
 
 ```javascript API key (Node.js)
-const resp = await fetch("https://api.simcel.io/auth/token", {
+const resp = await fetch("https://api.simcel.io/api/auth/v1/token", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ apiKey: "sk_live_your_api_key_here" }),
@@ -61,7 +61,7 @@ const { accessToken } = await resp.json();
 ```
 
 <Tip>
-  Tokens expire after **1 hour**. Cache the token and refresh it before expiry. Avoid calling `/auth/token` or `/oauth/token` on every request.
+  Tokens expire after **1 hour**. Cache the token and refresh it before expiry. Avoid calling `/api/auth/v1/token` or `/api/oauth/v1/token` on every request.
 </Tip>
 
 ---
@@ -71,7 +71,7 @@ const { accessToken } = await resp.json();
 You need a `planId` and at least one `scenarioId` for every Insights API call.
 
 ```bash
-curl https://api.simcel.io/insights/v1/plans \
+curl https://api.simcel.io/api/insights/v1/plans \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -100,7 +100,7 @@ Let's fetch the P&L summary comparing two scenarios:
 
 <CodeGroup>
 ```bash cURL
-curl "https://api.simcel.io/insights/v1/pnl-summary?planId=plan_9xKz2&scenarioIds=scen_abc,scen_def&interval=FY&currency=USD" \
+curl "https://api.simcel.io/api/insights/v1/pnl-summary?planId=plan_9xKz2&scenarioIds=scen_abc,scen_def&interval=FY&currency=USD" \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
@@ -110,7 +110,7 @@ import requests
 headers = {"Authorization": f"Bearer {token}"}
 
 resp = requests.get(
-    "https://api.simcel.io/insights/v1/pnl-summary",
+    "https://api.simcel.io/api/insights/v1/pnl-summary",
     headers=headers,
     params={
         "planId": "plan_9xKz2",
@@ -134,7 +134,7 @@ const params = new URLSearchParams({
 });
 
 const resp = await fetch(
-  `https://api.simcel.io/insights/v1/pnl-summary?${params}`,
+  `https://api.simcel.io/api/insights/v1/pnl-summary?${params}`,
   { headers: { Authorization: `Bearer ${accessToken}` } }
 );
 
@@ -186,3 +186,4 @@ const data = await resp.json();
 ```
 
 You're in. Next, explore the full [API Reference](/api-reference/overview) or jump into the [AI Agent guide](/guides/first-ai-agent).
+

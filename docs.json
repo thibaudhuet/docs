@@ -52,7 +52,7 @@
           },
           {
             "group": "Resources",
-            "pages": ["pricing", "changelog", "rate-limits", "errors"]
+            "pages": ["rate-limits", "errors"]
           }
         ]
       },

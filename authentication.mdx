@@ -15,7 +15,7 @@ Both methods return a short-lived **JWT bearer token** used on API requests.
 ## Option A: OAuth2 Client Credentials
 
 ```http
-POST https://api.simcel.io/oauth/token
+POST https://api.simcel.io/api/oauth/v1/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&scope=insights:read plans:read
@@ -50,7 +50,7 @@ grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT
 ### Exchange API key for a token
 
 ```http
-POST https://api.simcel.io/auth/token
+POST https://api.simcel.io/api/auth/v1/token
 Content-Type: application/json
 
 {
@@ -77,7 +77,7 @@ Tokens expire after **3600 seconds (1 hour)**.
 Pass the token as a `Bearer` header on every API request:
 
 ```http
-GET https://api.simcel.io/insights/v1/pnl-summary?planId=...
+GET https://api.simcel.io/api/insights/v1/pnl-summary?planId=...
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
@@ -102,7 +102,7 @@ class SimcelClient:
             return self._token
 
         resp = requests.post(
-            "https://api.simcel.io/auth/token",
+            "https://api.simcel.io/api/auth/v1/token",
             json={"apiKey": self.api_key}
         )
         resp.raise_for_status()
@@ -115,7 +115,7 @@ class SimcelClient:
         headers = kwargs.pop("headers", {})
         headers["Authorization"] = f"Bearer {self._get_token()}"
         return requests.get(
-            f"https://api.simcel.io/insights/v1{path}",
+            f"https://api.simcel.io/api/insights/v1{path}",
             headers=headers,
             **kwargs
         )
@@ -149,3 +149,4 @@ Most AI agent use cases only need `insights:read` + `plans:read`.
   "message": "Bearer token is missing or has expired"
 }
 ```
+

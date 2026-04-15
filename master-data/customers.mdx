@@ -23,7 +23,7 @@ The `/customers` endpoint is a convenience shortcut that returns only `Customer`
 
 ```python
 resp = requests.get(
-    "https://api.simcel.io/master/v1/customers",
+    "https://api.simcel.io/api/master/v1/customers",
     headers={"Authorization": f"Bearer {token}"},
     params={
         "workspaceId": "ws_abc123",
@@ -45,7 +45,7 @@ for customer in resp.json()["data"]:
 ```python
 # Get all DCs in the network
 resp = requests.get(
-    "https://api.simcel.io/master/v1/facilities",
+    "https://api.simcel.io/api/master/v1/facilities",
     headers={"Authorization": f"Bearer {token}"},
     params={
         "workspaceId": "ws_abc123",
@@ -70,7 +70,7 @@ Use `PATCH` to correct or update facility attributes. Common use cases:
 
 ```python
 resp = requests.patch(
-    "https://api.simcel.io/master/v1/facilities/DC-PARIS",
+    "https://api.simcel.io/api/master/v1/facilities/DC-PARIS",
     headers={
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
@@ -95,7 +95,7 @@ customers = []
 skip = 0
 while True:
     batch = requests.get(
-        "https://api.simcel.io/master/v1/customers",
+        "https://api.simcel.io/api/master/v1/customers",
         headers={"Authorization": f"Bearer {token}"},
         params={"workspaceId": "ws_abc123", "limit": 500, "skip": skip}
     ).json()
@@ -118,7 +118,7 @@ for region, refs in sorted(by_region.items()):
 
 ```python
 supply = requests.get(
-    "https://api.simcel.io/insights/v1/supply-performance",
+    "https://api.simcel.io/api/insights/v1/supply-performance",
     headers={"Authorization": f"Bearer {token}"},
     params={
         "planId": "plan_9xKz2",
@@ -129,7 +129,7 @@ supply = requests.get(
 ).json()
 
 facilities = requests.get(
-    "https://api.simcel.io/master/v1/facilities",
+    "https://api.simcel.io/api/master/v1/facilities",
     headers={"Authorization": f"Bearer {token}"},
     params={"workspaceId": "ws_abc123", "type": "DC"}
 ).json()
@@ -141,3 +141,4 @@ for row in supply["scenarios"][0]["series"]:
     country = dc.get("country", "?")
     print(f"{row['groupKey']} ({country}) | SL: {row['serviceLevel']:.1%} | Stock: {row['closingStock']:,}")
 ```
+

@@ -121,7 +121,7 @@ import pandas as pd
 token = get_simcel_token()
 
 resp = requests.get(
-    "https://api.simcel.io/insights/v1/demand-forecast",
+    "https://api.simcel.io/api/insights/v1/demand-forecast",
     headers={"Authorization": f"Bearer {token}"},
     params={
         "planId": "plan_9xKz2",
@@ -191,5 +191,6 @@ flowchart LR
 | Slack / Teams Bot | Internal self-service, team alerts | Medium | 3–5 days |
 
 <Note>
-  All patterns share the same SIMCEL API credentials and rate limits. For high-volume integrations like ERP sync running multiple times per day, consider the **Growth** or **Enterprise** plan. See [Pricing](/pricing).
+  All patterns share the same SIMCEL API credentials and rate limits. For high-volume integrations like ERP sync running multiple times per day, contact SIMCEL sales for enterprise planning.
 </Note>
+
