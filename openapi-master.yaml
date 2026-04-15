@@ -17,8 +17,6 @@ info:
 servers:
   - url: https://app.simcel.io/api/master/v1
     description: Production
-  - url: https://app-staging.simcel.io/api/master/v1
-    description: Staging
 
 security:
   - oauth2ClientCredentials: []
