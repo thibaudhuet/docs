@@ -6,16 +6,22 @@ description: Make your first SIMCEL API call in under 5 minutes
 ## Prerequisites
 
 - A SIMCEL account with at least one active Plan
-- An API key (generate one in **Settings → API Keys** inside the SIMCEL app)
+- OAuth2 client credentials (`client_id` and `client_secret`) or an API key
 
 ---
 
 ## Step 1: Get a token
 
-Exchange your API key for a short-lived bearer token.
+Use OAuth2 Client Credentials or exchange your API key for a short-lived bearer token.
+
+```bash OAuth2 (client credentials)
+curl -X POST https://api.simcel.io/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&scope=insights:read plans:read"
+```
 
 <CodeGroup>
-```bash cURL
+```bash API key (cURL)
 curl -X POST https://api.simcel.io/auth/token \
   -H "Content-Type: application/json" \
   -d '{
@@ -23,7 +29,7 @@ curl -X POST https://api.simcel.io/auth/token \
   }'
 ```
 
-```python Python
+```python API key (Python)
 import requests
 
 resp = requests.post("https://api.simcel.io/auth/token", json={
@@ -34,7 +40,7 @@ token = resp.json()["accessToken"]
 print(token)
 ```
 
-```javascript Node.js
+```javascript API key (Node.js)
 const resp = await fetch("https://api.simcel.io/auth/token", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -55,7 +61,7 @@ const { accessToken } = await resp.json();
 ```
 
 <Tip>
-  Tokens expire after **1 hour**. Cache the token and refresh it before expiry. Avoid calling `/auth/token` on every request.
+  Tokens expire after **1 hour**. Cache the token and refresh it before expiry. Avoid calling `/auth/token` or `/oauth/token` on every request.
 </Tip>
 
 ---

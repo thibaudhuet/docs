@@ -22,6 +22,7 @@ servers:
     description: Staging
 
 security:
+  - oauth2ClientCredentials: []
   - bearerAuth: []
 
 tags:
@@ -288,12 +289,22 @@ paths:
 
 components:
   securitySchemes:
+    oauth2ClientCredentials:
+      type: oauth2
+      description: OAuth2 Client Credentials flow.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.simcel.io/oauth/token
+          scopes:
+            insights:read: Read access to Insights API endpoints
+            plans:read: Read access to plans and scenarios
+            admin: Full access
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Obtain a token via `POST /auth/token` using your API key and secret.
+        Obtain a token via OAuth2 (`POST /oauth/token`) or API key exchange (`POST /auth/token`).
         Tokens expire after 1 hour.
 
   parameters:

@@ -21,6 +21,7 @@ servers:
     description: Staging
 
 security:
+  - oauth2ClientCredentials: []
   - bearerAuth: []
 
 tags:
@@ -483,10 +484,23 @@ paths:
 
 components:
   securitySchemes:
+    oauth2ClientCredentials:
+      type: oauth2
+      description: OAuth2 Client Credentials flow.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.simcel.io/oauth/token
+          scopes:
+            master:read: Read access to master data endpoints
+            master:write: Write access to master data endpoints
+            admin: Full access
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        Obtain a token via OAuth2 (`POST /oauth/token`) or API key exchange (`POST /auth/token`).
+        Tokens expire after 1 hour.
 
   parameters:
     workspaceId:

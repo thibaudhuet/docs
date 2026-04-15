@@ -3,23 +3,51 @@ title: Authentication
 description: How to authenticate with the SIMCEL Insights API
 ---
 
-The SIMCEL API uses **API keys** to identify your integration, and short-lived **JWT bearer tokens** for request authentication.
+The SIMCEL API supports **OAuth2** and **token-based authentication**.
 
-## Generate an API Key
+You can authenticate in two ways:
+
+- OAuth2 Client Credentials flow
+- API key to token exchange
+
+Both methods return a short-lived **JWT bearer token** used on API requests.
+
+## Option A: OAuth2 Client Credentials
+
+```http
+POST https://api.simcel.io/oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&scope=insights:read plans:read
+```
+
+**Response:**
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 3600,
+  "tokenType": "Bearer"
+}
+```
+
+---
+
+## Option B: API key to token exchange
+
+### Generate an API key
 
 1. Log in to [app.simcel.io](https://app.simcel.io)
-2. Go to **Settings → API Keys**
+2. Go to **Settings -> API Keys**
 3. Click **Create new key**
-4. Give it a name (e.g. `my-ai-agent-prod`) and set the scopes
-5. Copy the key — **it will only be shown once**
+4. Give it a name (for example `my-ai-agent-prod`) and set the scopes
+5. Copy the key. It is shown once.
 
 <Warning>
   Treat API keys like passwords. Do not commit them to source control. Use environment variables or a secrets manager.
 </Warning>
 
----
-
-## Exchange key for a token
+### Exchange API key for a token
 
 ```http
 POST https://api.simcel.io/auth/token
