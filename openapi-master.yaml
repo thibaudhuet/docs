@@ -15,9 +15,9 @@ info:
     email: support@simcel.io
 
 servers:
-  - url: https://api.simcel.io/api/master/v1
+  - url: https://app.simcel.io/api/master/v1
     description: Production
-  - url: https://api-staging.simcel.io/api/master/v1
+  - url: https://app-staging.simcel.io/api/master/v1
     description: Staging
 
 security:
@@ -489,7 +489,7 @@ components:
       description: OAuth2 Client Credentials flow.
       flows:
         clientCredentials:
-          tokenUrl: https://api.simcel.io/api/oauth/v1/token
+          tokenUrl: https://app.simcel.io/api/oauth/v1/token
           scopes:
             master:read: Read access to master data endpoints
             master:write: Write access to master data endpoints
@@ -794,4 +794,5 @@ components:
             statusCode: 404
             error: Not Found
             message: "Product SKU-001 not found in workspace ws_abc123"
+
 

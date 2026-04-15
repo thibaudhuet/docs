@@ -24,7 +24,7 @@ The **SIMCEL Master Data API** exposes the reference data that drives your suppl
 ## Base URL
 
 ```
-https://api.simcel.io/api/master/v1
+https://app.simcel.io/api/master/v1
 ```
 
 ---
@@ -40,7 +40,7 @@ GET /products?workspaceId=ws_abc123
 You can find your workspace IDs in the SIMCEL dashboard under **Settings → Workspaces**, or by calling:
 
 ```http
-GET https://api.simcel.io/api/insights/v1/plans
+GET https://app.simcel.io/api/insights/v1/plans
 Authorization: Bearer YOUR_TOKEN
 ```
 
@@ -79,4 +79,5 @@ The Master Data API supports two types of writes:
 | `GET` | `/facilities` | List all facilities (all types) | ✅ Available |
 | `GET` | `/facilities/{ref}` | Get one facility | ✅ Available |
 | `PATCH` | `/facilities/{ref}` | Override facility attributes | ✅ Available |
+
 

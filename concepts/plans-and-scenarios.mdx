@@ -16,7 +16,7 @@ Each plan defines:
 Every Insights API call requires a `planId`. You can list your plans with:
 
 ```http
-GET https://api.simcel.io/api/insights/v1/plans
+GET https://app.simcel.io/api/insights/v1/plans
 ```
 
 ---
@@ -59,4 +59,5 @@ print(f"Upside potential: ${ebit_delta:,.0f}")
 ## Data freshness
 
 Scenario data is recomputed each time a simulation runs inside SIMCEL. The `meta.generatedAt` field in every response tells you when the underlying data was last updated. For time-sensitive agents, check this field and alert if data is stale.
+
 
