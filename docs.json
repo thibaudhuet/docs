@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "almond",
+  "theme": "mint",
   "name": "SIMCEL Developers",
   "colors": {
     "primary": "#24333F",
