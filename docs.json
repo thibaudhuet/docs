@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "SIMCEL Developers",
   "colors": {
-    "primary": "#24333F",
-    "light": "#3d5568",
-    "dark": "#24333F"
+    "primary": "#C0392B",
+    "light": "#C0392B",
+    "dark": "#C0392B"
   },
   "favicon": "/images/favicon.png",
   "logo": {
